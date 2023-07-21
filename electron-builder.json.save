@@ -1,0 +1,92 @@
+{
+  "appId": "meshifyapp",
+  "icon": "build/icon.png",
+  "mac": {
+    "category": "public.app-category.productivity",
+    "target": [
+      "dmg",
+      "pkg",
+      "zip",
+      "mas"
+    ],
+    "icon": "build/icon.png",
+    "bundleVersion": "88",
+    "type": "distribution",
+    "artifactName": "meshifyapp-${version}-${os}.${ext}",
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false,
+    "provisioningProfile": "embedded.provisionprofile"
+  },
+  "dmg": {
+    "background": "build/background.png",
+    "contents": [
+      {
+        "type": "dir",
+        "x": 100,
+        "y": 211
+      },
+      {
+        "type": "link",
+        "path": "/Applications",
+        "x": 500,
+        "y": 211
+      }
+    ]
+  },
+  "pkg": {
+    "isRelocatable": false,
+    "overwriteAction": "upgrade"
+  },
+  "mas": {
+    "hardenedRuntime": true,
+    "asarUnpack": [
+      "node_modules"
+    ],
+    "artifactName": "meshifyapp-${version}-mas.${ext}"
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      },{
+        "target": "msi",
+        "arch": [
+          "x64"
+        ]
+      },
+      {
+        "target": "zip",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "icon": "build/icon.png",
+    "publisherName": "Nettica.app Inc.",
+    "legalTrademarks": "",
+    "verifyUpdateCodeSignature": false,
+    "requestedExecutionLevel": "asInvoker",
+    "signAndEditExecutable": false,
+    "signDlls": false,
+    "artifactName": "meshifyapp-${version}-${os}-${arch}.${ext}"
+  },
+  "nsis": {
+    "oneClick": true,
+    "perMachine": true,
+    "allowElevation": true,
+    "allowToChangeInstallationDirectory": false,
+    "uninstallDisplayName": "${productName} ${version}",
+    "include": "build/installer.nsh",
+    "deleteAppDataOnUninstall": false,
+    "displayLanguageSelector": false,
+    "unicode": true,
+    "warningsAsErrors": true,
+    "runAfterFinish": true,
+    "createDesktopShortcut": "always",
+    "createStartMenuShortcut": true,
+    "menuCategory": false
+  }
+}

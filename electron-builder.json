@@ -1,0 +1,31 @@
+{
+  "pkg": {
+    "isRelocatable": false,
+    "overwriteAction": "upgrade"
+  },
+
+  "linux" : {
+    "icon": "build/icon.icns",
+    "category": "Network",
+    "target": [
+      "deb",
+      "rpm"
+    ]
+  },
+
+  "win": {
+    "icon": "build/icon.ico"
+  },
+  "nsis": {
+    "oneClick": true,
+    "perMachine": true,
+    "allowElevation": true,
+    "allowToChangeInstallationDirectory": false,
+    "include": "build/installer.nsh",
+    "runAfterFinish": true,
+    "createDesktopShortcut": true, 
+    "createStartMenuShortcut": true,
+    "artifactName" : "${productName}-${version}.${ext}"
+  }
+}
+
