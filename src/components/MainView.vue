@@ -21,7 +21,7 @@
               icon
               @click="startSettings()"
             >
-              <v-icon title="Settings" dark> mdi-cog </v-icon>
+              <v-icon title="Settings" dark> mdi-cog-outline </v-icon>
               Settings
             </button>
             &nbsp;
@@ -30,7 +30,11 @@
               @click="startCreate()"
               class="btn btn-primary my-2 my-sm-0"
             >
-              <v-icon title="Add Network" dark> mdi-network </v-icon>
+              <img
+                :src="require('../assets/hub.svg')"
+                height="26"
+                alt="nettica"
+              />
               Add Network
             </button>
             &nbsp;
@@ -100,7 +104,7 @@
               class="px-0"
               color="success"
               v-model="net.enable"
-              v-on:change="update(net)"
+              v-on:change="updateVPN(net)"
             />
             {{ net.netName }}
           </v-expansion-panel-header>
@@ -129,15 +133,15 @@
     </div>
     <v-dialog v-model="dialogCreate" max-width="550">
       <v-card>
-        <v-card-title class="headline">Add Host to Net</v-card-title>
+        <v-card-title class="headline">Add to Net</v-card-title>
         <v-card-text>
           <v-row>
             <v-col cols="12">
               <v-form ref="form" v-model="valid">
                 <v-text-field
-                  v-model="hostName"
-                  label="Host friendly name"
-                  :rules="[(v) => !!v || 'host name is required']"
+                  v-model="vpnName"
+                  label="DNS name"
+                  :rules="[(v) => !!v || 'dns name is required']"
                   required
                 />
                 <v-select
@@ -167,7 +171,7 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn :disabled="!valid" color="success" @click="create(host)">
+          <v-btn :disabled="!valid" color="success" @click="create(vpn)">
             Submit
             <v-icon right dark>mdi-check-outline</v-icon>
           </v-btn>
@@ -186,7 +190,13 @@
             <v-col cols="12">
               <v-form ref="form" v-model="valid">
                 <v-text-field
-                  v-model="server"
+                  v-model="device.name"
+                  label="Friendly name"
+                  :rules="[(v) => !!v || 'friendly name is required']"
+                  required
+                />
+                <v-text-field
+                  v-model="device.server"
                   label="Server"
                   :rules="[
                     (v) =>
@@ -195,13 +205,13 @@
                   required
                 />
                 <v-text-field
-                  v-model="deviceId"
+                  v-model="device.id"
                   label="Device ID"
                   :rules="[(v) => !!v || 'Device ID is required']"
                   required
                 />
                 <v-text-field
-                  v-model="apiKey"
+                  v-model="device.apiKey"
                   label="Api Key"
                   :rules="[(v) => !!v || 'Api Key is required']"
                   required
@@ -235,7 +245,7 @@ const env = require("../../env");
 const ApexCharts = window.require("apexcharts");
 const os = window.require("os");
 
-var { serverUrl, appData } = env;
+var { serverUrl, appData, apiIdentifier, auth0Domain, clientId } = env;
 
 if (process.env.ALLUSERSPROFILE != null) {
   appData = process.env.ALLUSERSPROFILE;
@@ -282,7 +292,7 @@ export default {
       { text: "Actions", value: "action", sortable: false },
     ],
     loginText: "Login",
-    netticaConfig: {},
+    device: {},
     queries: [],
     nets: [],
     net: null,
@@ -296,16 +306,16 @@ export default {
     dialogSettings: false,
     server: "",
     deviceId: "",
+    deviceName: os.hostname(),
     apiKey: "",
     oneHour: 0,
-    host: null,
     valid: false,
     netList: {},
     endpoint: "",
     listenPort: 0,
     tags: [],
-    hostEnable: true,
-    hostName: "",
+    vpnEnable: true,
+    vpnName: "",
     showChart: false,
     showDns: false,
     logged_in: false,
@@ -412,22 +422,31 @@ export default {
     this.nets = config.config;
 
     try {
-      this.netticaConfig = JSON.parse(fs.readFileSync(NetticaClientPath));
+      this.device = JSON.parse(fs.readFileSync(NetticaClientPath));
     } catch (e) {
       console.error("nettica.conf does not exist: ", e.toString());
 
-      this.netticaConfig = {};
-      this.netticaConfig.Host = serverUrl;
-      this.netticaConfig.SourceAddress = "0.0.0.0";
-      this.netticaConfig.Quiet = true;
-      this.netticaConfig.CheckInterval = 10;
-      this.netticaConfig.DeviceID = "";
+      this.device = {};
+      this.device.server = serverUrl;
+      this.device.sourceAddress = "0.0.0.0";
+      this.device.quiet = true;
+      this.device.checkInterval = 10;
+      this.device.id = "";
     }
+
+    this.device.appData = appData;
+    this.device.authDomain = auth0Domain;
+    this.device.clientid = clientId;
+    this.device.apiid = apiIdentifier;
+    this.device.name = os.hostname();
+    this.device.os = os.platform();
+    this.device.arch = os.arch();
+    console.log("Device = ", this.device);
     // find the local host in a net and set the enable flag on the net
     if (this.nets != null) {
       for (let i = 0; i < this.nets.length; i++) {
         for (let j = 0; j < this.nets[i].vpns.length; j++) {
-          if (this.nets[i].vpns[j].deviceid == this.netticaConfig.DeviceID) {
+          if (this.nets[i].vpns[j].deviceid == this.device.id) {
             this.nets[i].enable = this.nets[i].vpns[j].enable;
           }
         }
@@ -480,7 +499,7 @@ export default {
         // find the local host in a net and set the enable flag on the net
         for (let i = 0; i < this.nets.length; i++) {
           for (let j = 0; j < this.nets[i].vpns.length; j++) {
-            if (this.nets[i].vpns[j].deviceid == this.netticaConfig.DeviceID) {
+            if (this.nets[i].vpns[j].deviceid == this.device.id) {
               this.nets[i].enable = this.nets[i].vpns[j].enable;
             }
           }
@@ -538,7 +557,7 @@ export default {
       }
     },
     async startCreate() {
-      this.host = {
+      this.vpn = {
         name: "",
         email: "",
         enable: true,
@@ -559,7 +578,7 @@ export default {
           text: this.myNets[i].netName,
           value: this.myNets[i].id,
         };
-        if (this.netList.items[i].text == this.host.netName) {
+        if (this.netList.items[i].text == this.vpn.netName) {
           selected = i;
         }
       }
@@ -577,6 +596,7 @@ export default {
           console.log("stopService response = ", response);
         });
     },
+
     getMetrics(that, net) {
       let stats;
       axios
@@ -634,33 +654,33 @@ export default {
       // head: 0,
       // buckets: 12,
     },
-    create(host) {
-      console.log("Create Host: ", host);
+    create(vpn) {
+      console.log("Create VPN: ", vpn);
       // get a new keypair from the keystore for this host
       try {
         axios
           .get("http://127.0.0.1:53280/keys/", { headers: {} })
           .then((response) => {
             console.log("Public Key = ", response.data);
-            host.current.publicKey = response.data.Public;
-            host.current.privateKey = "";
+            vpn.current.publicKey = response.data.Public;
+            vpn.current.privateKey = "";
           });
       } catch (e) {
         console.log("Error getting keypair: ", e);
       }
 
-      this.host.name = this.hostName;
-      this.host.current.endpoint = this.endpoint;
-      this.host.current.listenPort = this.listenPort;
-      this.host.current.listenPort = parseInt(this.host.current.listenPort, 10);
-      this.host.netName = this.netList.selected.text;
-      this.host.netid = this.netList.selected.value;
-      this.host.deviceid = this.netticaConfig.DeviceID;
+      this.vpn.name = this.vpnName;
+      this.vpn.current.endpoint = this.endpoint;
+      this.vpn.current.listenPort = this.listenPort;
+      this.vpn.current.listenPort = parseInt(this.vpn.current.listenPort, 10);
+      this.vpn.netName = this.netList.selected.text;
+      this.vpn.netid = this.netList.selected.value;
+      this.vpn.deviceid = this.device.id;
       this.dialogCreate = false;
-      console.log("createHost Host = ", this.host);
-      this.createHost(host);
+      console.log("createVPN vpn = ", this.vpn);
+      this.createVPN(vpn);
     },
-    createHost(host) {
+    createVPN(vpn) {
       let accessToken = ipcRenderer.sendSync("accessToken");
       let body = {
         grant_type: "authorization_code",
@@ -677,62 +697,14 @@ export default {
         })
         .then(() => {
           axios
-            .post(serverUrl + "/api/v1.0/host", host, {
+            .post(serverUrl + "/api/v1.0/vpn", vpn, {
               headers: {
                 Authorization: "Bearer " + accessToken,
               },
             })
             .then((response) => {
-              let host = response.data;
-              console.log("Host = ", host);
-              let changed = false;
-              console.log("Checking nettica.conf for updates");
-              if (
-                this.netticaConfig.DeviceID == "" ||
-                this.nets == null ||
-                this.nets.length == 0
-              ) {
-                this.netticaConfig.DeviceID = host.deviceid;
-                this.netticaConfig.ApiKey = host.apiKey;
-                changed = true;
-                console.log(
-                  "this.netticaConfig changed = ",
-                  this.netticaConfig
-                );
-              }
-              if (changed) {
-                console.log("Writing new nettica.conf");
-                try {
-                  fs.writeFileSync(
-                    NetticaClientPath,
-                    JSON.stringify(this.netticaConfig)
-                  );
-                  console.log(
-                    "nettica.conf has been updated :",
-                    this.netticaConfig
-                  );
-                } catch (e) {
-                  console.log("Error updating config file: %s", e);
-                  if (os.platform() != "win32") {
-                    // If we're not on windows, try to sudo cp it
-                    try {
-                      fs.writeFileSync(
-                        "nettica.conf.tmp",
-                        JSON.stringify(this.netticaConfig)
-                      );
-                      spawn(
-                        "sudo",
-                        ["mv", "nettica.conf.tmp", NetticaClientPath],
-                        { windowsHide: false }
-                      );
-                    } catch (e) {
-                      {
-                        console.log("Could not write nettica.conf. %s", e);
-                      }
-                    }
-                  }
-                }
-              }
+              let vpn = response.data;
+              console.log("VPN = ", vpn);
             })
             .catch((error) => {
               if (error) console.error(error);
@@ -779,7 +751,7 @@ export default {
           });
       });
     },
-    async update(net) {
+    async updateVPN(net) {
       return new Promise((resolve, reject) => {
         console.log("Update Net: ", net);
         let accessToken = ipcRenderer.sendSync("accessToken");
@@ -792,17 +764,17 @@ export default {
           code: accessToken,
           redirect_uri: serverUrl,
         };
-        let host = null;
+        let vpn = null;
         for (let i = 0; i < net.vpns.length; i++) {
-          if (net.vpns[i].deviceid == this.netticaConfig.DeviceID) {
-            host = net.vpns[i];
+          if (net.vpns[i].deviceid == this.device.id) {
+            vpn = net.vpns[i];
             break;
           }
         }
-        if (host != null) {
-          host.enable = !host.enable;
+        if (vpn != null) {
+          vpn.enable = net.enable;
         } else {
-          return reject(new Error("local host not found in net"));
+          return reject(new Error("local vpn not found on device"));
         }
         axios
           .post(serverUrl + "/api/v1.0/auth/token", body, {
@@ -812,19 +784,22 @@ export default {
           })
           .then(() => {
             axios
-              .patch(serverUrl + "/api/v1.0/host/" + host.id, host, {
+              .patch(serverUrl + "/api/v1.0/vpn/" + vpn.id, vpn, {
                 headers: {
                   Authorization: "Bearer " + accessToken,
                 },
               })
               .then(() => {
-                if (!host.enable) {
-                  this.stopService(net.netName);
+                if (!vpn.enable) {
+                  this.stopService(vpn.netName);
                 }
                 resolve();
               })
               .catch((error) => {
                 if (error) console.error(error);
+                if (!vpn.enable) {
+                  this.stopService(vpn.netName);
+                }
               });
           })
           .catch((error) => {
@@ -834,17 +809,35 @@ export default {
     },
     startSettings() {
       this.dialogSettings = true;
-
-      this.server = this.netticaConfig.Host;
-      this.deviceId = this.netticaConfig.DeviceID;
-      this.apiKey = this.netticaConfig.ApiKey;
     },
-    saveSettings() {
-      this.netticaConfig.Host = this.server;
-      this.netticaConfig.DeviceID = this.deviceId;
-      this.netticaConfig.ApiKey = this.apiKey;
+    async saveSettings() {
       this.dialogSettings = false;
-      this.saveConfig();
+
+      axios
+        .get(
+          "http://127.0.0.1:53280/config/?server=" +
+            this.device.server +
+            "&id=" +
+            this.device.id +
+            "&name=" +
+            this.device.name +
+            "&apiKey=" +
+            this.device.apiKey +
+            "&appData=" +
+            this.device.appData +
+            "&clientId=" +
+            this.device.clientid +
+            "&authDomain=" +
+            this.device.authDomain +
+            "&apiid=" +
+            this.device.apiid,
+          {
+            headers: {},
+          }
+        )
+        .then((response) => {
+          console.log("Save Settings response = ", response);
+        });
     },
     loadNetwork(evt) {
       let name = evt.currentTarget.innerText;
