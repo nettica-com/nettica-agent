@@ -26,7 +26,7 @@
             </button>
             &nbsp;
             <button
-              :disabled="addMeshDisabled"
+              :disabled="addNetDisabled"
               @click="startCreate()"
               class="btn btn-primary my-2 my-sm-0"
             >
@@ -108,7 +108,7 @@
             <v-data-table
               dark
               :headers="headers"
-              :items="net.hosts"
+              :items="net.vpns"
               :search="search"
             >
               <!-- eslint-disable-next-line -->
@@ -129,7 +129,7 @@
     </div>
     <v-dialog v-model="dialogCreate" max-width="550">
       <v-card>
-        <v-card-title class="headline">Add Host to Mesh</v-card-title>
+        <v-card-title class="headline">Add Host to Net</v-card-title>
         <v-card-text>
           <v-row>
             <v-col cols="12">
@@ -186,18 +186,18 @@
             <v-col cols="12">
               <v-form ref="form" v-model="valid">
                 <v-text-field
-                  v-model="netticaHost"
-                  label="Nettica Host"
+                  v-model="server"
+                  label="Server"
                   :rules="[
                     (v) =>
-                      !!v || 'host is required, eg. https://my.nettica.com/',
+                      !!v || 'server is required, eg. https://my.nettica.com/',
                   ]"
                   required
                 />
                 <v-text-field
-                  v-model="hostId"
-                  label="Host Group"
-                  :rules="[(v) => !!v || 'Host Group is required']"
+                  v-model="deviceId"
+                  label="Device ID"
+                  :rules="[(v) => !!v || 'Device ID is required']"
                   required
                 />
                 <v-text-field
@@ -249,11 +249,11 @@ if (os.platform() == "linux") {
   NetticaClientPath = "/etc/nettica/nettica.conf";
 }
 
-let Meshes;
+let Nets;
 ipcRenderer.on("handle-config", (e, arg) => {
   // document window
-  Meshes = arg;
-  console.log("Meshes updated: ", Meshes);
+  Nets = arg;
+  console.log("Nets updated: ", Nets);
 });
 let Queries = [];
 ipcRenderer.on("handle-dns", (e, arg) => {
@@ -287,15 +287,15 @@ export default {
     nets: [],
     net: null,
     netName: "",
-    myMeshes: [],
+    myNets: [],
     nodes: [],
     links: [],
     nodeSize: 30,
     selected: "",
     dialogCreate: false,
     dialogSettings: false,
-    netticaHost: "",
-    hostId: "",
+    server: "",
+    deviceId: "",
     apiKey: "",
     oneHour: 0,
     host: null,
@@ -380,7 +380,7 @@ export default {
     chart: null,
   }),
   computed: {
-    addMeshDisabled() {
+    addNetDisabled() {
       return this.logged_in == false;
     },
     options() {
@@ -417,24 +417,24 @@ export default {
       console.error("nettica.conf does not exist: ", e.toString());
 
       this.netticaConfig = {};
-      this.netticaConfig.NetticaHost = serverUrl;
+      this.netticaConfig.Host = serverUrl;
       this.netticaConfig.SourceAddress = "0.0.0.0";
       this.netticaConfig.Quiet = true;
       this.netticaConfig.CheckInterval = 10;
-      this.netticaConfig.HostID = "";
+      this.netticaConfig.DeviceID = "";
     }
     // find the local host in a net and set the enable flag on the net
     if (this.nets != null) {
       for (let i = 0; i < this.nets.length; i++) {
-        for (let j = 0; j < this.nets[i].hosts.length; j++) {
-          if (this.nets[i].hosts[j].hostGroup == this.netticaConfig.HostID) {
-            this.nets[i].enable = this.nets[i].hosts[j].enable;
+        for (let j = 0; j < this.nets[i].vpns.length; j++) {
+          if (this.nets[i].vpns[j].deviceid == this.netticaConfig.DeviceID) {
+            this.nets[i].enable = this.nets[i].vpns[j].enable;
           }
         }
       }
     }
 
-    // setInterval(loadMeshes, 1000);
+    // setInterval(loadNets, 1000);
     setInterval(() => {
       this.oneHour++;
       if (this.oneHour > (60 * 60) / 5) {
@@ -445,7 +445,7 @@ export default {
 
         this.oneHour = 0;
       }
-      this.loadMeshes();
+      this.loadNets();
       this.loadQueries();
       if (this.net != null) {
         this.getMetrics(this, this.net.netName);
@@ -471,19 +471,17 @@ export default {
         await this.logout();
       }
     },
-    loadMeshes() {
-      if (Meshes) {
-        console.log("loadMeshes - Meshes = ", Meshes);
-        this.nets = Meshes;
-        Meshes = null;
-        console.log("loadMeshes Config = ", this.nets);
+    loadNets() {
+      if (Nets) {
+        console.log("loadNets - Nets = ", Nets);
+        this.nets = Nets;
+        Nets = null;
+        console.log("loadNets Config = ", this.nets);
         // find the local host in a net and set the enable flag on the net
         for (let i = 0; i < this.nets.length; i++) {
-          for (let j = 0; j < this.nets[i].hosts.length; j++) {
-            if (
-              this.nets[i].hosts[j].hostGroup == this.netticaConfig.HostID
-            ) {
-              this.nets[i].enable = this.nets[i].hosts[j].enable;
+          for (let j = 0; j < this.nets[i].vpns.length; j++) {
+            if (this.nets[i].vpns[j].deviceid == this.netticaConfig.DeviceID) {
+              this.nets[i].enable = this.nets[i].vpns[j].enable;
             }
           }
         }
@@ -548,18 +546,18 @@ export default {
         current: {},
       };
 
-      // if (Meshes != null) {
-      //  this.nets = Meshes;
+      // if (Nets != null) {
+      //  this.nets = Nets;
       //}
-      await this.getMeshList();
+      await this.getNetList();
 
       this.netList = { selected: { text: "", value: "" }, items: [] };
 
       var selected = 0;
-      for (let i = 0; i < this.myMeshes.length; i++) {
+      for (let i = 0; i < this.myNets.length; i++) {
         this.netList.items[i] = {
-          text: this.myMeshes[i].netName,
-          value: this.myMeshes[i].id,
+          text: this.myNets[i].netName,
+          value: this.myNets[i].id,
         };
         if (this.netList.items[i].text == this.host.netName) {
           selected = i;
@@ -622,8 +620,11 @@ export default {
             that.series[1].last = stats[net].Recv;
             console.log("Send %d %d", that.series[0].head, that.series[0].last);
             console.log("Recv %d %d", that.series[1].head, that.series[1].last);
-
-            that.$refs.chart1.updateSeries([that.series[0], that.series[1]]);
+            try {
+              that.$refs.chart1.updateSeries([that.series[0], that.series[1]]);
+            } catch (e) {
+              console.log("Error updating chart: ", e);
+            }
           }
         });
       // .catch(() => {});
@@ -654,7 +655,7 @@ export default {
       this.host.current.listenPort = parseInt(this.host.current.listenPort, 10);
       this.host.netName = this.netList.selected.text;
       this.host.netid = this.netList.selected.value;
-      this.host.hostGroup = this.netticaConfig.HostID;
+      this.host.deviceid = this.netticaConfig.DeviceID;
       this.dialogCreate = false;
       console.log("createHost Host = ", this.host);
       this.createHost(host);
@@ -687,11 +688,11 @@ export default {
               let changed = false;
               console.log("Checking nettica.conf for updates");
               if (
-                this.netticaConfig.HostID == "" ||
+                this.netticaConfig.DeviceID == "" ||
                 this.nets == null ||
                 this.nets.length == 0
               ) {
-                this.netticaConfig.HostID = host.hostGroup;
+                this.netticaConfig.DeviceID = host.deviceid;
                 this.netticaConfig.ApiKey = host.apiKey;
                 changed = true;
                 console.log(
@@ -741,7 +742,7 @@ export default {
           if (error) throw new Error(error);
         });
     },
-    async getMeshList() {
+    async getNetList() {
       return new Promise((resolve, reject) => {
         let accessToken = ipcRenderer.sendSync("accessToken");
         if (!accessToken) return reject(new Error("no access token available"));
@@ -766,7 +767,7 @@ export default {
                 },
               })
               .then((response) => {
-                this.myMeshes = response.data;
+                this.myNets = response.data;
                 resolve();
               })
               .catch((error) => {
@@ -792,9 +793,9 @@ export default {
           redirect_uri: serverUrl,
         };
         let host = null;
-        for (let i = 0; i < net.hosts.length; i++) {
-          if (net.hosts[i].hostGroup == this.netticaConfig.HostID) {
-            host = net.hosts[i];
+        for (let i = 0; i < net.vpns.length; i++) {
+          if (net.vpns[i].deviceid == this.netticaConfig.DeviceID) {
+            host = net.vpns[i];
             break;
           }
         }
@@ -834,13 +835,13 @@ export default {
     startSettings() {
       this.dialogSettings = true;
 
-      this.netticaHost = this.netticaConfig.NetticaHost;
-      this.hostId = this.netticaConfig.HostID;
+      this.server = this.netticaConfig.Host;
+      this.deviceId = this.netticaConfig.DeviceID;
       this.apiKey = this.netticaConfig.ApiKey;
     },
     saveSettings() {
-      this.netticaConfig.NetticaHost = this.netticaHost;
-      this.netticaConfig.HostID = this.hostId;
+      this.netticaConfig.Host = this.server;
+      this.netticaConfig.DeviceID = this.deviceId;
       this.netticaConfig.ApiKey = this.apiKey;
       this.dialogSettings = false;
       this.saveConfig();
@@ -851,7 +852,7 @@ export default {
       let l = 0;
       this.links = [];
       this.nodes = [];
-      let net_hosts = [];
+      let net_vpns = [];
       for (let i = 0; i < this.nets.length; i++) {
         if (this.nets[i].netName == name) {
           this.net = this.nets[i];
@@ -863,19 +864,19 @@ export default {
       this.showChart = true;
       // this.getMetrics(this.net.netName);
 
-      for (let i = 0; i < this.net.hosts.length; i++) {
-        if (this.net.hosts[i].netName == name) {
-          net_hosts[x] = this.net.hosts[i];
+      for (let i = 0; i < this.net.vpns.length; i++) {
+        if (this.net.vpns[i].netName == name) {
+          net_vpns[x] = this.net.vpns[i];
           this.nodes[x] = {
             id: x,
-            name: this.net.hosts[i].name /* _color:'gray'*/,
+            name: this.net.vpns[i].name /* _color:'gray'*/,
           };
           x++;
         }
       }
-      for (let i = 0; i < net_hosts.length; i++) {
-        for (let j = 0; j < net_hosts.length; j++) {
-          if (i != j && net_hosts[j].current.endpoint != "") {
+      for (let i = 0; i < net_vpns.length; i++) {
+        for (let j = 0; j < net_vpns.length; j++) {
+          if (i != j && net_vpns[j].current.endpoint != "") {
             this.links[l] = { sid: i, tid: j, _color: "white" };
             l++;
           }
