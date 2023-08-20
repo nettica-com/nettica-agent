@@ -676,6 +676,7 @@ export default {
       this.vpn.netName = this.netList.selected.text;
       this.vpn.netid = this.netList.selected.value;
       this.vpn.deviceid = this.device.id;
+      this.vpn.accountid = this.device.accountid;
       this.dialogCreate = false;
       console.log("createVPN vpn = ", this.vpn);
       this.createVPN(vpn);
@@ -696,19 +697,54 @@ export default {
           },
         })
         .then(() => {
-          axios
-            .post(serverUrl + "/api/v1.0/vpn", vpn, {
-              headers: {
-                Authorization: "Bearer " + accessToken,
-              },
-            })
-            .then((response) => {
-              let vpn = response.data;
-              console.log("VPN = ", vpn);
-            })
-            .catch((error) => {
-              if (error) console.error(error);
-            });
+          if (this.device.id == "") {
+            this.device.name = os.hostname();
+            axios
+              .post(serverUrl + "/api/v1.0/device", this.device, {
+                headers: {
+                  Authorization: "Bearer " + accessToken,
+                },
+              })
+              .then((response) => {
+                this.device = response.data;
+                console.log("device = ", this.device);
+                vpn.deviceid = this.device.id;
+                vpn.accountid = this.device.accountid;
+
+                this.saveSettings();
+
+                axios
+                  .post(serverUrl + "/api/v1.0/vpn", vpn, {
+                    headers: {
+                      Authorization: "Bearer " + accessToken,
+                    },
+                  })
+                  .then((response) => {
+                    let vpn = response.data;
+                    console.log("VPN = ", vpn);
+                  })
+                  .catch((error) => {
+                    if (error) console.error(error);
+                  });
+              })
+              .catch((error) => {
+                if (error) console.error(error);
+              });
+          } else {
+            axios
+              .post(serverUrl + "/api/v1.0/vpn", vpn, {
+                headers: {
+                  Authorization: "Bearer " + accessToken,
+                },
+              })
+              .then((response) => {
+                let vpn = response.data;
+                console.log("VPN = ", vpn);
+              })
+              .catch((error) => {
+                if (error) console.error(error);
+              });
+          }
         })
         .catch((error) => {
           if (error) throw new Error(error);
@@ -823,14 +859,16 @@ export default {
             this.device.name +
             "&apiKey=" +
             this.device.apiKey +
-            "&appData=" +
+            "&appdata=" +
             this.device.appData +
             "&clientId=" +
             this.device.clientid +
             "&authDomain=" +
             this.device.authDomain +
             "&apiid=" +
-            this.device.apiid,
+            this.device.apiid +
+            "&accountid=" +
+            this.device.accountid,
           {
             headers: {},
           }
