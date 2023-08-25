@@ -192,7 +192,7 @@ function createAppWindow() {
       contextIsolation: false,
       enableRemoteModule: true,
       backgroundColor: "#333",
-      icon: path.join(__dirname, "/extra/meshify.png"),
+      icon: path.join(__dirname, "/extra/nettica.png"),
     },
   });
   mainWindow.setTitle("Nettica Agent");
