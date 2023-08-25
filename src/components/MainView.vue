@@ -521,7 +521,8 @@ export default {
     launchSSH(item) {
       console.log("SSH Item: ", item);
       if (os.platform == "win32") {
-        spawn("ssh", [item.name], {
+        console.log("item = ", item);
+        spawn("ssh.exe", [item.name], {
           windowsHide: false,
           detached: true,
           shell: true,
@@ -861,7 +862,7 @@ export default {
             this.device.apiKey +
             "&appdata=" +
             this.device.appData +
-            "&clientId=" +
+            "&clientid=" +
             this.device.clientid +
             "&authDomain=" +
             this.device.authDomain +
