@@ -146,6 +146,18 @@
                 />
                 <v-select
                   return-object
+                  v-model="acntList.selected"
+                  :items="acntList.items"
+                  item-text="text"
+                  item-value="value"
+                  label="For this account"
+                  :rules="[(v) => !!v || 'Account is required']"
+                  single
+                  persistent-hint
+                  required
+                />
+                <v-select
+                  return-object
                   v-model="netList.selected"
                   :items="netList.items"
                   item-text="text"
@@ -292,12 +304,22 @@ export default {
       { text: "Actions", value: "action", sortable: false },
     ],
     loginText: "Login",
-    device: {},
+    device: {
+      server: serverUrl,
+      apiid: apiIdentifier,
+      authdomain: auth0Domain,
+      clientid: clientId,
+      appData: appData,
+      name: os.hostname(),
+    },
     queries: [],
     nets: [],
     net: null,
     netName: "",
     myNets: [],
+    netList: {},
+    myAccounts: [],
+    acntList: {},
     nodes: [],
     links: [],
     nodeSize: 30,
@@ -310,7 +332,6 @@ export default {
     apiKey: "",
     oneHour: 0,
     valid: false,
-    netList: {},
     endpoint: "",
     listenPort: 0,
     tags: [],
@@ -435,7 +456,7 @@ export default {
     }
 
     this.device.appData = appData;
-    this.device.authDomain = auth0Domain;
+    this.device.authdomain = auth0Domain;
     this.device.clientid = clientId;
     this.device.apiid = apiIdentifier;
     this.device.name = os.hostname();
@@ -560,6 +581,7 @@ export default {
     async startCreate() {
       this.vpn = {
         name: "",
+        accountid: "",
         email: "",
         enable: true,
         tags: [],
@@ -570,6 +592,7 @@ export default {
       //  this.nets = Nets;
       //}
       await this.getNetList();
+      await this.getAccountsList();
 
       this.netList = { selected: { text: "", value: "" }, items: [] };
 
@@ -583,8 +606,19 @@ export default {
           selected = i;
         }
       }
-
       this.netList.selected = this.netList.items[selected];
+
+      selected = 0;
+      this.acntList = { selected: { text: "", value: "" }, items: [] };
+      for (let i = 0; i < this.myAccounts.length; i++) {
+        this.acntList.items[i] = {
+          text:
+            this.myAccounts[i].accountName + " - " + this.myAccounts[i].parent,
+          value: this.myAccounts[i].parent,
+        };
+      }
+      this.acntList.selected = this.acntList.items[selected];
+
       this.dialogCreate = true;
     },
     async stopService(netName) {
@@ -677,7 +711,7 @@ export default {
       this.vpn.netName = this.netList.selected.text;
       this.vpn.netid = this.netList.selected.value;
       this.vpn.deviceid = this.device.id;
-      this.vpn.accountid = this.device.accountid;
+      this.vpn.accountid = this.acntList.selected.value;
       this.dialogCreate = false;
       console.log("createVPN vpn = ", this.vpn);
       this.createVPN(vpn);
@@ -686,7 +720,7 @@ export default {
       let accessToken = ipcRenderer.sendSync("accessToken");
       let body = {
         grant_type: "authorization_code",
-        client_id: "Dz2KZcK8BT7ELBb91VnFzg8Xg1II6nLb",
+        client_id: this.device.clientid,
         state: accessToken,
         code: accessToken,
         redirect_uri: serverUrl,
@@ -700,6 +734,7 @@ export default {
         .then(() => {
           if (this.device.id == "") {
             this.device.name = os.hostname();
+            this.device.accountid = vpn.accountid;
             axios
               .post(serverUrl + "/api/v1.0/device", this.device, {
                 headers: {
@@ -710,7 +745,6 @@ export default {
                 this.device = response.data;
                 console.log("device = ", this.device);
                 vpn.deviceid = this.device.id;
-                vpn.accountid = this.device.accountid;
 
                 this.saveSettings();
 
@@ -751,13 +785,50 @@ export default {
           if (error) throw new Error(error);
         });
     },
+    async getAccountsList() {
+      return new Promise((resolve, reject) => {
+        let accessToken = ipcRenderer.sendSync("accessToken");
+        if (!accessToken) return reject(new Error("no access token available"));
+        let body = {
+          grant_type: "authorization_code",
+          client_id: this.device.clientid,
+          state: accessToken,
+          code: accessToken,
+          redirect_uri: serverUrl,
+        };
+        axios
+          .post(serverUrl + "/api/v1.0/auth/token", body, {
+            headers: {
+              Authorization: "Bearer " + accessToken,
+            },
+          })
+          .then(() => {
+            axios
+              .get(serverUrl + "/api/v1.0/accounts/", {
+                headers: {
+                  Authorization: "Bearer " + accessToken,
+                },
+              })
+              .then((response) => {
+                this.myAccounts = response.data;
+                resolve();
+              })
+              .catch((error) => {
+                if (error) console.error(error);
+              });
+          })
+          .catch((error) => {
+            if (error) throw new Error(error);
+          });
+      });
+    },
     async getNetList() {
       return new Promise((resolve, reject) => {
         let accessToken = ipcRenderer.sendSync("accessToken");
         if (!accessToken) return reject(new Error("no access token available"));
         let body = {
           grant_type: "authorization_code",
-          client_id: "Dz2KZcK8BT7ELBb91VnFzg8Xg1II6nLb",
+          client_id: this.device.clientid,
           state: accessToken,
           code: accessToken,
           redirect_uri: serverUrl,
@@ -796,7 +867,7 @@ export default {
         if (!accessToken) accessToken = ipcRenderer.sendSync("accessToken");
         let body = {
           grant_type: "authorization_code",
-          client_id: "Dz2KZcK8BT7ELBb91VnFzg8Xg1II6nLb",
+          client_id: this.device.clientid,
           state: accessToken,
           code: accessToken,
           redirect_uri: serverUrl,
@@ -864,8 +935,8 @@ export default {
             this.device.appData +
             "&clientid=" +
             this.device.clientid +
-            "&authDomain=" +
-            this.device.authDomain +
+            "&authdomain=" +
+            this.device.authdomain +
             "&apiid=" +
             this.device.apiid +
             "&accountid=" +
