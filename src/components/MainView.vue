@@ -99,6 +99,21 @@
           :key="i"
         >
           <v-expansion-panel-header>
+            <v-btn
+              class="px-0 mx-0"
+              max-width="50px"
+              color="red"
+              icon
+              flex="0"
+              shrink="0"
+              @click="deleteVPN(net)"
+              :disabled="net.enable"
+              title="Delete Network"
+            >
+              <v-icon dark width="30px" style="width: 30px">
+                mdi-delete-outline
+              </v-icon>
+            </v-btn>
             <v-switch
               dark
               class="px-0"
@@ -107,6 +122,7 @@
               v-on:change="updateVPN(net)"
             />
             {{ net.netName }}
+            <v-spacer />
           </v-expansion-panel-header>
           <v-expansion-panel-content>
             <v-data-table
@@ -915,6 +931,60 @@ export default {
           });
       });
     },
+
+    async deleteVPN(net) {
+      if (confirm(`Do you really want to delete ${net.netName} ?`)) {
+        return new Promise((resolve, reject) => {
+          console.log("Delete Net: ", net);
+          let accessToken = ipcRenderer.sendSync("accessToken");
+          if (!accessToken) ipcRenderer.sendSync("authenticate");
+          if (!accessToken) accessToken = ipcRenderer.sendSync("accessToken");
+          let body = {
+            grant_type: "authorization_code",
+            client_id: this.device.clientid,
+            state: accessToken,
+            code: accessToken,
+            redirect_uri: serverUrl,
+          };
+          let vpn = null;
+          for (let i = 0; i < net.vpns.length; i++) {
+            if (net.vpns[i].deviceid == this.device.id) {
+              vpn = net.vpns[i];
+              break;
+            }
+          }
+          if (vpn != null) {
+            vpn.enable = net.enable;
+          } else {
+            return reject(new Error("local vpn not found on device"));
+          }
+          axios
+            .post(serverUrl + "/api/v1.0/auth/token", body, {
+              headers: {
+                Authorization: "Bearer " + accessToken,
+              },
+            })
+            .then(() => {
+              axios
+                .delete(serverUrl + "/api/v1.0/vpn/" + vpn.id, vpn, {
+                  headers: {
+                    Authorization: "Bearer " + accessToken,
+                  },
+                })
+                .then(() => {
+                  resolve();
+                })
+                .catch((error) => {
+                  if (error) console.error(error);
+                });
+            })
+            .catch((error) => {
+              if (error) throw new Error(error);
+            });
+        });
+      }
+    },
+
     startSettings() {
       this.dialogSettings = true;
     },
