@@ -934,54 +934,26 @@ export default {
 
     async deleteVPN(net) {
       if (confirm(`Do you really want to delete ${net.netName} ?`)) {
-        return new Promise((resolve, reject) => {
-          console.log("Delete Net: ", net);
-          let accessToken = ipcRenderer.sendSync("accessToken");
-          if (!accessToken) ipcRenderer.sendSync("authenticate");
-          if (!accessToken) accessToken = ipcRenderer.sendSync("accessToken");
-          let body = {
-            grant_type: "authorization_code",
-            client_id: this.device.clientid,
-            state: accessToken,
-            code: accessToken,
-            redirect_uri: serverUrl,
-          };
-          let vpn = null;
-          for (let i = 0; i < net.vpns.length; i++) {
-            if (net.vpns[i].deviceid == this.device.id) {
-              vpn = net.vpns[i];
-              break;
-            }
+        console.log("deleteVPN ", net);
+        let vpn = null;
+        for (let i = 0; i < net.vpns.length; i++) {
+          if (net.vpns[i].deviceid == this.device.id) {
+            vpn = net.vpns[i];
+            break;
           }
-          if (vpn != null) {
-            vpn.enable = net.enable;
-          } else {
-            return reject(new Error("local vpn not found on device"));
-          }
-          axios
-            .post(serverUrl + "/api/v1.0/auth/token", body, {
-              headers: {
-                Authorization: "Bearer " + accessToken,
-              },
-            })
-            .then(() => {
-              axios
-                .delete(serverUrl + "/api/v1.0/vpn/" + vpn.id, vpn, {
-                  headers: {
-                    Authorization: "Bearer " + accessToken,
-                  },
-                })
-                .then(() => {
-                  resolve();
-                })
-                .catch((error) => {
-                  if (error) console.error(error);
-                });
-            })
-            .catch((error) => {
-              if (error) throw new Error(error);
-            });
-        });
+        }
+
+        if (vpn == null) {
+          return new Error("local vpn not found on device");
+        }
+
+        axios
+          .delete("http://127.0.0.1:53280/vpn/" + vpn.id + "/", {
+            headers: {},
+          })
+          .then((response) => {
+            console.log("stopService response = ", response);
+          });
       }
     },
 
