@@ -329,7 +329,7 @@ app.on("ready", async () => {
     }
   }
 
-  let filename = path.join(__static, "./nettica.png");
+  let filename = path.join("./nettica.png");
   console.log("Filename = ", filename);
   let icon = nativeImage.createFromPath(filename);
   tray = new Tray(icon);
