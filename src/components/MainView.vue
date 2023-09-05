@@ -1012,16 +1012,25 @@ export default {
       for (let i = 0; i < this.net.vpns.length; i++) {
         if (this.net.vpns[i].netName == name) {
           net_vpns[x] = this.net.vpns[i];
-          this.nodes[x] = {
-            id: x,
-            name: this.net.vpns[i].name /* _color:'gray'*/,
-          };
+          this.nodes[x] = { id: x, name: this.net.vpns[i].name };
+          if (this.net.vpns[i].current.endpoint == "") {
+            this.nodes[x]._color = "#34adcd";
+          } else {
+            this.nodes[x]._color = "#83c44d";
+          }
+          if (this.net.vpns[i].role == "Egress") {
+            this.nodes[x]._color = "#50C878";
+          }
           x++;
         }
       }
       for (let i = 0; i < net_vpns.length; i++) {
         for (let j = 0; j < net_vpns.length; j++) {
-          if (i != j && net_vpns[j].current.endpoint != "") {
+          if (
+            i != j &&
+            net_vpns[j].current.endpoint != "" &&
+            net_vpns[j].role != "Egress"
+          ) {
             this.links[l] = { sid: i, tid: j, _color: "white" };
             l++;
           }
@@ -1033,6 +1042,7 @@ export default {
 </script>
 <style>
 @import "~bootstrap/dist/css/bootstrap.min.css";
+
 body {
   background: #333;
   color: white;
@@ -1041,24 +1051,30 @@ body {
 ::-webkit-scrollbar {
   overflow: auto;
 }
+
 ::-webkit-scrollbar-track {
   background: #444;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #888;
 }
+
 ::-webkit-scrollbar-corner {
   background: #333;
 }
+
 text {
   font-size: 12px;
   color: orange;
   fill: orange;
 }
+
 .node {
   fill: #336699;
   stroke: #5b81a7;
 }
+
 /*
 .link {
   color: white;
@@ -1067,6 +1083,7 @@ text {
 .net-svg {
   margin: 0 auto;
 }
+
 .network {
   display: flex;
   justify-content: center;
@@ -1078,6 +1095,7 @@ h4 {
   justify-content: center;
   font-size: 18px;
 }
+
 div.chart-wrapper {
   display: flex;
   align-items: left;
