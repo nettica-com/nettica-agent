@@ -192,7 +192,7 @@ function createAppWindow() {
     show: false,
     width: 1200,
     height: 800,
-    minWidth: 410,
+    minWidth: 420,
     minHeight: 180,
     autoHideMenuBar: true,
     frame: true,

@@ -142,6 +142,7 @@
       </v-col>
       <v-col cols="3" class="mx-4">
         <div>
+          <b v-show="showDns" class="mb-0">DNS&nbsp;Queries</b>
           <div
             id="canvas"
             v-show="showDns"
@@ -150,11 +151,11 @@
               background: #333;
               width: 350px;
               min-width: 200px;
-              height: 300px;
+              height: 276px;
               overflow-y: auto;
+              margin-bottom: 10px;
             "
           >
-            <span style="text-align: center">DNS Queries</span>
             <div
               v-for="(query, index) in queries"
               :key="index"
