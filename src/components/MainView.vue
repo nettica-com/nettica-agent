@@ -47,51 +47,7 @@
         </nav>
       </header>
     </div>
-    <div class="row" id="exp">
-      <h4 style="align: center">{{ netName }}</h4>
-      <div class="chart-wrapper">
-        <div
-          id="canvas"
-          v-show="showDns"
-          style="
-            border: 1px solid #000000;
-            background: #333;
-            width: 400px;
-            min-width: 200px;
-            height: 300px;
-            overflow-y: auto;
-            padding: 5px;
-            margin-right: 5px;
-            margin-left: 5px;
-          "
-        >
-          <b>DNS Queries</b>
-          <div
-            v-for="(query, index) in queries"
-            :key="index"
-            style="font-size: 12px"
-          >
-            {{ query }}
-          </div>
-        </div>
-        <apexChart
-          v-show="showChart"
-          ref="chart1"
-          id="chart1"
-          dark
-          width="400"
-          height="300"
-          type="line"
-          :options="goptions"
-          :series="series"
-        ></apexChart>
-        <d3-network
-          class="network"
-          :net-nodes="nodes"
-          :net-links="links"
-          :options="options"
-        />
-      </div>
+    <div class="row">
       <v-expansion-panels dark>
         <v-expansion-panel
           @click="loadNetwork"
@@ -125,28 +81,91 @@
             <v-spacer />
           </v-expansion-panel-header>
           <v-expansion-panel-content>
-            <v-data-table
-              dark
-              :headers="headers"
-              :items="net.vpns"
-              :search="search"
-            >
-              <!-- eslint-disable-next-line -->
-              <template v-slot:item.action="{ item }">
-                <v-btn class="mx-2" icon @click="launchSSH(item)">
-                  <v-icon dark title="SSH"> mdi-lan-connect </v-icon>
+            <v-treeview :items="net.vpns" :search="search">
+              <template v-slot:label="{ item }">
+                <v-btn
+                  class="mx-2"
+                  icon
+                  @click="launchSSH(item)"
+                  title="SSH"
+                  :disabled="!item.enable"
+                >
+                  <v-icon dark> mdi-lan-connect </v-icon>
                 </v-btn>
-                <v-btn class="mx-2" icon @click="launchRDP(item)">
-                  <v-icon dark title="Remote Desktop">
-                    mdi-remote-desktop
-                  </v-icon>
+                <v-btn
+                  class="mx-2"
+                  icon
+                  @click="launchRDP(item)"
+                  title="Remote Desktop"
+                  :disabled="!item.enable"
+                >
+                  <v-icon dark> mdi-remote-desktop </v-icon>
                 </v-btn>
+                {{ item.name }}
               </template>
-            </v-data-table>
+              <template v-slot:append="{ item }">
+                <v-spacer></v-spacer>
+                <v-span class="hidden-xs-only"
+                  >{{ item.current.endpoint }}
+                  &nbsp;
+                  {{ item.current.address[0] }}</v-span
+                >
+              </template>
+            </v-treeview>
           </v-expansion-panel-content>
         </v-expansion-panel>
       </v-expansion-panels>
     </div>
+    <h4 style="align: center">{{ netName }}</h4>
+    <v-row id="exp" dense>
+      <v-col cols="4" class="ml-4">
+        <apexChart
+          v-show="showChart"
+          ref="chart1"
+          id="chart1"
+          dark
+          type="line"
+          :width="350"
+          :height="300"
+          :options="goptions"
+          :series="series"
+        ></apexChart>
+      </v-col>
+      <v-col col="5" class="mx-0">
+        <d3-network
+          class="network"
+          :height="300"
+          :net-nodes="nodes"
+          :net-links="links"
+          :options="options"
+        />
+      </v-col>
+      <v-col cols="3" class="mx-4">
+        <div>
+          <div
+            id="canvas"
+            v-show="showDns"
+            style="
+              border: 1px solid #000000;
+              background: #333;
+              width: 350px;
+              min-width: 200px;
+              height: 300px;
+              overflow-y: auto;
+            "
+          >
+            <span style="text-align: center">DNS Queries</span>
+            <div
+              v-for="(query, index) in queries"
+              :key="index"
+              style="font-size: 12px"
+            >
+              {{ query }}
+            </div>
+          </div>
+        </div>
+      </v-col>
+    </v-row>
     <v-dialog v-model="dialogCreate" max-width="550">
       <v-card>
         <v-card-title class="headline">Add to Net</v-card-title>
@@ -1097,11 +1116,12 @@ text {
 */
 .net-svg {
   margin: 0 auto;
+  height: 300px;
 }
 
 .network {
-  display: flex;
-  justify-content: center;
+  width: 100%;
+  height: 100%;
 }
 
 h4 {
@@ -1112,8 +1132,11 @@ h4 {
 }
 
 div.chart-wrapper {
-  display: flex;
   align-items: left;
-  justify-content: left;
+  margin-right: 20px;
+}
+
+.draggable-area {
+  -webkit-app-region: drag;
 }
 </style>

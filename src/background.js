@@ -18,6 +18,11 @@ const fileWatcher = require("chokidar");
 const env = require("../env");
 const os = require("os");
 
+var icon = path.join(__static, "./nettica-24.png");
+if (os.platform() == "win32") {
+  icon = path.join(__static, "./nettica-24x24.png");
+}
+
 var { appData } = env;
 if (process.env.ALLUSERSPROFILE != null) {
   appData = process.env.ALLUSERSPROFILE;
@@ -143,13 +148,13 @@ function createAuthWindow() {
     width: 600,
     height: 1000,
     autoHideMenuBar: true,
-    icon: path.join(__dirname, "/extra/nettica.png"),
+    icon: icon,
     webPreferences: {
       nodeIntegration: false,
     },
   });
   authWindow.setTitle("Authentication");
-  authWindow.setIcon(path.join(__static, "./nettica-24.png"));
+  authWindow.setIcon(icon);
   authWindow.loadURL(authService.getAuthenticationURL());
 
   const {
@@ -182,15 +187,20 @@ function destroyAuthWin() {
 }
 
 function createAppWindow() {
-  var pict = path.join(__static, "./nettica-24.png");
-  console.log("pict = ", pict);
   // Create the browser window.
   mainWindow = new BrowserWindow({
     show: false,
-    title: "Nettica Agent",
-    width: 1100,
+    width: 1200,
     height: 800,
+    minWidth: 410,
+    minHeight: 180,
     autoHideMenuBar: true,
+    frame: true,
+    titleBarOverlay: {
+      color: "#2f3241",
+      symbolColor: "#74b1be",
+      // height: 60
+    },
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
@@ -199,11 +209,14 @@ function createAppWindow() {
       contextIsolation: false,
       enableRemoteModule: true,
       backgroundColor: "#333",
-      icon: pict,
+      icon: icon,
     },
   });
+
+  console.log("icon = ", icon);
   mainWindow.setTitle("Nettica Agent");
-  mainWindow.setIcon(pict);
+  mainWindow.setIcon(icon);
+  //mainWindow.setWindowButtonVisibility(true);
 
   // let application;
   // application.isQuiting = false;
@@ -337,10 +350,8 @@ app.on("ready", async () => {
     }
   }
 
-  let filename = path.join(__static,"./nettica-24.png");
-  console.log("Filename = ", filename);
-  let icon = nativeImage.createFromPath(filename);
-  tray = new Tray(icon);
+  let i = nativeImage.createFromPath(icon);
+  tray = new Tray(i);
 
   tray.on("click", function () {
     mainWindow.show();
