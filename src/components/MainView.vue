@@ -287,6 +287,11 @@ if (os.platform() == "linux") {
   NetticaClientPath = "/etc/nettica/nettica.conf";
 }
 
+if (os.platform() == "darwin") {
+  NetticaConfigPath = "/usr/local/etc/nettica/nettica.json";
+  NetticaClientPath = "/usr/local/etc/nettica/nettica.conf";
+}
+
 let Nets;
 ipcRenderer.on("handle-config", (e, arg) => {
   // document window

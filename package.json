@@ -23,6 +23,7 @@
     "child_process": "^1.0.2",
     "chokidar": "^3.5.3",
     "core-js": "^3.8.3",
+    "dmg-license": "^1.0.11",
     "electron-log": "^4.4.7",
     "electron-updater": "^5.0.1",
     "fs": "^0.0.1-security",
@@ -38,7 +39,8 @@
     "vue-router": "^3.5.1",
     "vuetify": "^2.6.0",
     "vuex": "^3.6.2",
-    "vuex-electron": "^1.0.3"
+    "vuex-electron": "^1.0.3",
+    "yarn": "^1.22.19"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",

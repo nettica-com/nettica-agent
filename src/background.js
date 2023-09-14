@@ -29,6 +29,10 @@ if (os.platform() == "linux") {
   NetticaConfigPath = "/etc/nettica/nettica.json";
 }
 
+if (os.platform() == "darwin") {
+  NetticaConfigPath = "/usr/local/etc/nettica/nettica.json";
+}
+
 //Multicast Client receiving sent messages
 var PORT = 25264;
 var MCAST_ADDR = "224.1.1.1"; //same mcast address as Server
@@ -329,7 +333,7 @@ app.on("ready", async () => {
     }
   }
 
-  let filename = path.join(__static,"./nettica.png");
+  let filename = path.join(__static,"./nettica-24.png");
   console.log("Filename = ", filename);
   let icon = nativeImage.createFromPath(filename);
   tray = new Tray(icon);
@@ -355,7 +359,7 @@ app.on("ready", async () => {
 
   tray.setContextMenu(contextMenu);
   tray.setToolTip("Nettica Agent");
-  tray.setTitle("Nettica Agent");
+  tray.setTitle("");
 
   createWindow();
 
