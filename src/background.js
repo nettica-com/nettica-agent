@@ -149,6 +149,7 @@ function createAuthWindow() {
     },
   });
   authWindow.setTitle("Authentication");
+  authWindow.setIcon(path.join(__static, "./nettica-24.png"));
   authWindow.loadURL(authService.getAuthenticationURL());
 
   const {
