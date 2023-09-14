@@ -181,6 +181,8 @@ function destroyAuthWin() {
 }
 
 function createAppWindow() {
+  var pict = path.join(__static, "./nettica-24.png");
+  console.log("pict = ", pict);
   // Create the browser window.
   mainWindow = new BrowserWindow({
     show: false,
@@ -196,10 +198,11 @@ function createAppWindow() {
       contextIsolation: false,
       enableRemoteModule: true,
       backgroundColor: "#333",
-      icon: path.join(__dirname, "/extra/nettica.png"),
+      icon: pict,
     },
   });
   mainWindow.setTitle("Nettica Agent");
+  mainWindow.setIcon(pict);
 
   // let application;
   // application.isQuiting = false;
@@ -343,6 +346,9 @@ app.on("ready", async () => {
   });
 
   const contextMenu = Menu.buildFromTemplate([
+    {
+      label: "Nettica Agent",
+    },
     {
       label: "Open",
       click: function () {
