@@ -359,9 +359,6 @@ app.on("ready", async () => {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: "Nettica Agent",
-    },
-    {
       label: "Open",
       click: function () {
         mainWindow.show();
