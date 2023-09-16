@@ -81,37 +81,42 @@
             <v-spacer />
           </v-expansion-panel-header>
           <v-expansion-panel-content>
-            <v-treeview :items="net.vpns" :search="search">
-              <template v-slot:label="{ item }">
-                <v-btn
-                  class="mx-2"
-                  icon
-                  @click="launchSSH(item)"
-                  title="SSH"
-                  :disabled="!item.enable"
-                >
-                  <v-icon dark> mdi-lan-connect </v-icon>
-                </v-btn>
-                <v-btn
-                  class="mx-2"
-                  icon
-                  @click="launchRDP(item)"
-                  title="Remote Desktop"
-                  :disabled="!item.enable"
-                >
-                  <v-icon dark> mdi-remote-desktop </v-icon>
-                </v-btn>
-                {{ item.name }}
-              </template>
-              <template v-slot:append="{ item }">
-                <v-spacer></v-spacer>
-                <v-span class="hidden-xs-only"
-                  >{{ item.current.endpoint }}
-                  &nbsp;
-                  {{ item.current.address[0] }}</v-span
-                >
-              </template>
-            </v-treeview>
+            <table class="vpntable">
+              <th>ssh</th>
+              <th>rdp</th>
+              <th>name</th>
+              <th class="hidden-xs-only">address</th>
+              <tr v-for="(vpn, x) in net.vpns" :key="x">
+                <td>
+                  <v-btn
+                    class="mx-2"
+                    icon
+                    @click="launchSSH(vpn)"
+                    title="SSH"
+                    :disabled="!vpn.current.hasSSH"
+                  >
+                    <v-icon dark> mdi-lan-connect </v-icon>
+                  </v-btn>
+                </td>
+                <td>
+                  <v-btn
+                    class="mx-2"
+                    icon
+                    @click="launchRDP(vpn)"
+                    title="Remote Desktop"
+                    :disabled="!vpn.current.hasRDP"
+                  >
+                    <v-icon dark> mdi-remote-desktop </v-icon>
+                  </v-btn>
+                </td>
+                <td>
+                  {{ vpn.name }}
+                </td>
+                <td class="hidden-xs-only">
+                  {{ vpn.current.address[0] }}
+                </td>
+              </tr>
+            </table>
           </v-expansion-panel-content>
         </v-expansion-panel>
       </v-expansion-panels>
@@ -1139,5 +1144,15 @@ div.chart-wrapper {
 
 .draggable-area {
   -webkit-app-region: drag;
+}
+
+.vpntable th {
+  text-align: center;
+}
+.vpntable tr td {
+  padding: 3px;
+  margin: 0px;
+  border: 0px;
+  height: 40px;
 }
 </style>

@@ -190,7 +190,7 @@ function destroyAuthWin() {
 
 function createAppWindow() {
   // Create the browser window.
-  const mainWindowStateKeeper = windowStateKeeper('main');
+  const mainWindowStateKeeper = windowStateKeeper("main");
   mainWindowStateKeeper.defaultWidth = 1200;
   mainWindowStateKeeper.defaultHeight = 800;
 
