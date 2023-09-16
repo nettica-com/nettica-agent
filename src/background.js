@@ -12,6 +12,8 @@ import {
 import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 import authService from "./services/auth-service";
+import windowStateKeeper from "electron-window-state";
+
 import fs from "fs";
 const path = require("path");
 const fileWatcher = require("chokidar");
@@ -188,10 +190,16 @@ function destroyAuthWin() {
 
 function createAppWindow() {
   // Create the browser window.
+  const mainWindowStateKeeper = windowStateKeeper('main');
+  mainWindowStateKeeper.defaultWidth = 1200;
+  mainWindowStateKeeper.defaultHeight = 800;
+
   mainWindow = new BrowserWindow({
     show: false,
-    width: 1200,
-    height: 800,
+    x: mainWindowStateKeeper.x,
+    y: mainWindowStateKeeper.y,
+    width: mainWindowStateKeeper.width,
+    height: mainWindowStateKeeper.height,
     minWidth: 420,
     minHeight: 180,
     autoHideMenuBar: true,
@@ -212,6 +220,8 @@ function createAppWindow() {
       icon: icon,
     },
   });
+
+  mainWindowStateKeeper.manage(mainWindow);
 
   console.log("icon = ", icon);
   mainWindow.setTitle("Nettica Agent");
