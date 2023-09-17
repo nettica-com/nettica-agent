@@ -91,7 +91,7 @@
                   <v-btn
                     class="mx-2"
                     icon
-                    @click="launchSSH(vpn)"
+                    @click="launchSSH(net, vpn)"
                     title="SSH"
                     :disabled="!vpn.current.hasSSH"
                   >
@@ -102,7 +102,7 @@
                   <v-btn
                     class="mx-2"
                     icon
-                    @click="launchRDP(vpn)"
+                    @click="launchRDP(net, vpn)"
                     title="Remote Desktop"
                     :disabled="!vpn.current.hasRDP"
                   >
@@ -124,17 +124,19 @@
     <h4 style="align: center">{{ netName }}</h4>
     <v-row id="exp" dense>
       <v-col cols="4" class="ml-4">
-        <apexChart
-          v-show="showChart"
-          ref="chart1"
-          id="chart1"
-          dark
-          type="line"
-          :width="350"
-          :height="300"
-          :options="goptions"
-          :series="series"
-        ></apexChart>
+        <div class="chart-wrapper" v-show="showChart">
+          <apexChart
+            v-show="showChart"
+            ref="chart1"
+            id="chart1"
+            dark
+            type="line"
+            :width="330"
+            :height="280"
+            :options="goptions"
+            :series="series"
+          ></apexChart>
+        </div>
       </v-col>
       <v-col col="5" class="mx-0">
         <d3-network
@@ -153,7 +155,8 @@
             v-show="showDns"
             style="
               border: 1px solid #000000;
-              background: #333;
+              border-radius: 10px;
+              background: #444;
               width: 350px;
               min-width: 200px;
               height: 276px;
@@ -164,7 +167,7 @@
             <div
               v-for="(query, index) in queries"
               :key="index"
-              style="font-size: 12px"
+              style="font-size: 12px; padding-left: 5px"
             >
               {{ query }}
             </div>
@@ -386,6 +389,7 @@ export default {
     showChart: false,
     showDns: false,
     logged_in: false,
+    timer_running: false,
     goptions: {
       grid: {
         show: true,
@@ -409,6 +413,7 @@ export default {
             breakpoint: 480,
             options: {
               chart: {
+                borderRadius: 10,
                 width: 200,
               },
               legend: {
@@ -585,18 +590,23 @@ export default {
         Queries = [];
       }
     },
-    launchSSH(item) {
-      console.log("SSH Item: ", item);
+    launchSSH(net, item) {
+      console.log("SSH Item: ", item, net);
+      var name = item.name;
+      if (this.isDnsEnabled(net) == false) {
+        var parts = item.current.address[0].split("/");
+        name = parts[0];
+      }
       if (os.platform == "win32") {
         console.log("item = ", item);
-        spawn("ssh.exe", [item.name], {
+        spawn("ssh.exe", [name], {
           windowsHide: false,
           detached: true,
           shell: true,
         });
       } else {
         if (process.arch == "arm") {
-          var child = spawn("lxterminal", ["-e", "ssh", item.name], {
+          var child = spawn("lxterminal", ["-e", "ssh", name], {
             foreground: true,
             detached: true,
           });
@@ -604,7 +614,7 @@ export default {
         } else {
           var child2 = spawn(
             "exo-open",
-            ["--launch", "TerminalEmulator", "ssh", item.name],
+            ["--launch", "TerminalEmulator", "ssh", name],
             {
               foreground: true,
               detached: true,
@@ -615,12 +625,30 @@ export default {
         }
       }
     },
-    launchRDP(item) {
-      console.log("RDP Item", item);
+    isDnsEnabled(net) {
+      var enabled = false;
+      for (let i = 0; i < net.vpns.length; i++) {
+        if (
+          net.vpns[i].deviceid == this.device.id &&
+          net.vpns[i].current.enableDns == true
+        ) {
+          enabled = true;
+          break;
+        }
+      }
+      return enabled;
+    },
+    launchRDP(net, item) {
+      console.log("RDP Item", item, net);
+      var name = item.name;
+      if (this.isDnsEnabled(net) == false) {
+        var parts = item.current.address[0].split("/");
+        name = parts[0];
+      }
       if (os.platform == "win32") {
-        spawn("mstsc.exe", ["/v:" + item.name]);
+        spawn("mstsc.exe", ["/v:" + name]);
       } else {
-        var child = spawn("rdesktop", ["-f", item.name]);
+        var child = spawn("rdesktop", ["-f", name]);
         console.log("child = %s", child);
       }
     },
@@ -1139,7 +1167,11 @@ h4 {
 
 div.chart-wrapper {
   align-items: left;
-  margin-right: 20px;
+  padding: 10px;
+  border-radius: 10px;
+  background-color: #444;
+  height: 300px;
+  width: 350px;
 }
 
 .draggable-area {
