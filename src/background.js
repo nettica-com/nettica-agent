@@ -94,7 +94,7 @@ ipcMain.on("logout", () => {
     height: 600,
     show: false,
   });
-  win.loadURL("http://auth.meshify.app/v2/logout?federated");
+  win.loadURL("http://"+ "auth.nettica.com" + "/v2/logout?federated");
 
   win.on("ready-to-show", () => {
     win.close();

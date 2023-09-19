@@ -599,7 +599,7 @@ export default {
       }
       if (os.platform == "win32") {
         console.log("item = ", item);
-        spawn("ssh.exe", [name], {
+        spawn("cmd.exe", ["/c", "wt.exe", "-w", "ssh", "nt", "ssh.exe", name], {
           windowsHide: false,
           detached: true,
           shell: true,
