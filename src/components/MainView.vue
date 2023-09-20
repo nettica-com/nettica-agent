@@ -177,7 +177,7 @@
     </v-row>
     <v-dialog v-model="dialogCreate" max-width="550">
       <v-card>
-        <v-card-title class="headline">Add to Net</v-card-title>
+        <v-card-title class="headline">Add to Network</v-card-title>
         <v-card-text>
           <v-row>
             <v-col cols="12">
@@ -221,6 +221,41 @@
                   type="number"
                   label="Listen port"
                 />
+                <table width="100%">
+                  <tr>
+                    <td>
+                      <v-switch
+                        v-model="vpn.current.syncEndpoint"
+                        label="Sync Endpoint"
+                      />
+                    </td>
+                    <td>
+                      <v-switch v-model="vpn.current.hasSSH" label="SSH" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <v-switch
+                        v-model="vpn.current.upnp"
+                        label="Enable UPnP"
+                      />
+                    </td>
+                    <td>
+                      <v-switch
+                        v-model="vpn.current.hasRDP"
+                        label="Remote Desktop"
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="2">
+                      <v-switch
+                        v-model="vpn.current.enableDns"
+                        label="Enable Nettica DNS"
+                      />
+                    </td>
+                  </tr>
+                </table>
               </v-form>
             </v-col>
           </v-row>
@@ -364,6 +399,20 @@ export default {
     queries: [],
     nets: [],
     net: null,
+    vpn: {
+      name: "",
+      accountid: "",
+      email: "",
+      enable: true,
+      tags: [],
+      current: {
+        syncEndpoint: false,
+        upnp: false,
+        enableDns: false,
+        hasSSH: false,
+        hasRDP: false,
+      },
+    },
     netName: "",
     myNets: [],
     netList: {},
@@ -653,15 +702,6 @@ export default {
       }
     },
     async startCreate() {
-      this.vpn = {
-        name: "",
-        accountid: "",
-        email: "",
-        enable: true,
-        tags: [],
-        current: {},
-      };
-
       // if (Nets != null) {
       //  this.nets = Nets;
       //}
@@ -775,6 +815,11 @@ export default {
     },
     create(vpn) {
       console.log("Create VPN: ", vpn);
+
+      if (this.vpn.current.syncEndpoint && this.endpoint == "") {
+        alert("Endpoint is required if sync is selected");
+        return;
+      }
       // get a new keypair from the keystore for this host
       try {
         axios
