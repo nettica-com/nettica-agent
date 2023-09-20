@@ -712,16 +712,17 @@ export default {
 
       var selected = 0;
       for (let i = 0; i < this.myNets.length; i++) {
-        // filter out any nets that are already in the list
-        let found = false;
-        for (let j = 0; j < this.nets.length; j++) {
-          if (this.myNets[i].id == this.nets[j].netid) {
-            found = true;
-            break;
+        if (this.nets != null) {
+          // filter out any nets that are already in the list
+          let found = false;
+          for (let j = 0; j < this.nets.length; j++) {
+            if (this.myNets[i].id == this.nets[j].netid) {
+              found = true;
+              break;
+            }
           }
+          if (found) continue;
         }
-        if (found) continue;
-
         this.netList.items[i] = {
           text: this.myNets[i].netName,
           value: this.myNets[i].id,
