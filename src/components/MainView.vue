@@ -75,7 +75,7 @@
               class="px-0"
               color="success"
               v-model="net.enable"
-              v-on:change="updateVPN(net)"
+              v-on:change="EnableVPN(net)"
             />
             {{ net.netName }}
             <v-spacer />
@@ -746,6 +746,18 @@ export default {
 
       this.dialogCreate = true;
     },
+
+    async startService(netName) {
+      console.log("startService %s", netName);
+      axios
+        .patch("http://127.0.0.1:53280/service/" + netName + "/", {
+          headers: {},
+        })
+        .then((response) => {
+          console.log("startService response = ", response);
+        });
+    },
+
     async stopService(netName) {
       console.log("stopService %s", netName);
       axios
@@ -989,6 +1001,30 @@ export default {
           });
       });
     },
+
+    async EnableVPN(net) {
+      console.log("Enable VPN: ", net);
+      let vpn = null;
+      for (let i = 0; i < net.vpns.length; i++) {
+        if (net.vpns[i].deviceid == this.device.id) {
+          vpn = net.vpns[i];
+          break;
+        }
+      }
+
+      if (vpn == null) {
+        return new Error("local vpn not found on device");
+      }
+
+      vpn.enable = net.enable;
+
+      if (vpn.enable) {
+        this.startService(vpn.netName);
+      } else {
+        this.stopService(vpn.netName);
+      }
+    },
+
     async updateVPN(net) {
       return new Promise((resolve, reject) => {
         console.log("Update Net: ", net);
