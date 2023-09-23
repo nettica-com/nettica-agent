@@ -307,6 +307,11 @@
                   :rules="[(v) => !!v || 'Api Key is required']"
                   required
                 />
+                <v-switch
+                  v-model="autoLaunch"
+                  label="Launch at start-up"
+                  @click="setAutoLaunch()"
+                />
               </v-form>
             </v-col>
           </v-row>
@@ -335,6 +340,12 @@ const spawn = window.require("child_process").spawn;
 const env = require("../../env");
 const ApexCharts = window.require("apexcharts");
 const os = window.require("os");
+const AutoLaunch = window.require("auto-launch");
+// query the value of autoLaunch
+const autoLauncher = new AutoLaunch({
+  name: "netticaagent",
+  path: process.execPath,
+});
 
 var { serverUrl, appData, apiIdentifier, auth0Domain, clientId } = env;
 
@@ -424,6 +435,7 @@ export default {
     selected: "",
     dialogCreate: false,
     dialogSettings: false,
+    autoLaunch: false,
     server: "",
     deviceId: "",
     deviceName: os.hostname(),
@@ -573,6 +585,10 @@ export default {
         }
       }
     }
+
+    autoLauncher.isEnabled().then((isEnabled) => {
+      this.autoLaunch = isEnabled;
+    });
 
     // setInterval(loadNets, 1000);
     setInterval(() => {
@@ -1140,6 +1156,14 @@ export default {
         .then((response) => {
           console.log("Save Settings response = ", response);
         });
+    },
+
+    setAutoLaunch() {
+      if (this.autoLaunch) {
+        autoLauncher.enable();
+      } else {
+        autoLauncher.disable();
+      }
     },
     loadNetwork(evt) {
       let name = evt.currentTarget.innerText;
