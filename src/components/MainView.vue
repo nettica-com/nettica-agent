@@ -670,12 +670,12 @@ export default {
           shell: true,
         });
       } else {
-        if (process.arch == "arm") {
+        if ((process.arch == "arm") || (this.device.platform == "raspberry")) {
           var child = spawn("lxterminal", ["-e", "ssh", name], {
             foreground: true,
             detached: true,
           });
-          console.log("child = %s", child);
+          console.log("child = ", child);
         } else {
           var child2 = spawn(
             "exo-open",
@@ -686,7 +686,7 @@ export default {
               shell: true,
             }
           );
-          console.log("child = %s", child2);
+          console.log("child = ", child2);
         }
       }
     },
