@@ -670,7 +670,7 @@ export default {
           shell: true,
         });
       } else {
-        if ((process.arch == "arm") || (this.device.platform == "raspberry")) {
+        if (process.arch == "arm" || this.device.platform == "raspberry") {
           var child = spawn("lxterminal", ["-e", "ssh", name], {
             foreground: true,
             detached: true,
