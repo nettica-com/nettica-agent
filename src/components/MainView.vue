@@ -669,14 +669,17 @@ export default {
           detached: true,
           shell: false,
         });
-      } else {
-        if (process.arch == "arm" || this.device.platform == "raspberry") {
-          var child = spawn("lxterminal", ["-e", "ssh", name], {
+      } else if (os.platform == "linux") {
+        var child = spawn(
+          "x-terminal-emulator",
+          ["--new-tab", "-e", "ssh", name],
+          {
             foreground: true,
             detached: true,
-          });
-          console.log("child = ", child);
-        } else {
+          }
+        );
+        console.log("child = ", child);
+        if (child.exitCode != null && child.exitCode != 0) {
           var child2 = spawn(
             "exo-open",
             ["--launch", "TerminalEmulator", "ssh", name],
@@ -686,8 +689,14 @@ export default {
               shell: true,
             }
           );
-          console.log("child = ", child2);
+          console.log("child2 = ", child2);
         }
+      } else if (os.platform == "darwin") {
+        child = spawn("open", ["-a", "Terminal", "ssh", name], {
+          foreground: true,
+          detached: true,
+        });
+        console.log("child = ", child);
       }
     },
     isDnsEnabled(net) {
@@ -796,7 +805,6 @@ export default {
           if (stats[net] == null) {
             console.log("Response did not contain a result");
           } else {
-            console.log("Stats = ", stats);
             if (this.series.length == 0 || this.seriesInit) {
               // this.series = [response.data.length];
               console.log("seriesInit = %s", this.seriesInit);
@@ -826,12 +834,10 @@ export default {
             that.series[1].data[11] = stats[net].Recv - that.series[1].last;
             that.series[1].head = that.series[1].head + 1;
             that.series[1].last = stats[net].Recv;
-            console.log("Send %d %d", that.series[0].head, that.series[0].last);
-            console.log("Recv %d %d", that.series[1].head, that.series[1].last);
             try {
               that.$refs.chart1.updateSeries([that.series[0], that.series[1]]);
             } catch (e) {
-              console.log("Error updating chart: ", e);
+              // do nothing
             }
           }
         });

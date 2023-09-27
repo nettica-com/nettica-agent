@@ -19,7 +19,7 @@ const path = require("path");
 const fileWatcher = require("chokidar");
 const env = require("../env");
 const os = require("os");
-const { Notification } = require('electron')
+const { Notification } = require("electron");
 
 var icon = path.join(__static, "./nettica-24.png");
 if (os.platform() == "win32") {
@@ -28,9 +28,8 @@ if (os.platform() == "win32") {
 
 var bigIcon = path.join(__static, "./nettica.png");
 
-if (process.platform === 'win32')
-{
-    app.setAppUserModelId("Nettica Agent");
+if (process.platform === "win32") {
+  app.setAppUserModelId("Nettica Agent");
 }
 
 var { appData } = env;
@@ -53,7 +52,7 @@ var PORT = 25264;
 var UPORT = 25265;
 
 var MCAST_ADDR = "224.1.1.1"; //same mcast address as Server
-var UCAST_ADDR = "127.0.0.1"
+var UCAST_ADDR = "127.0.0.1";
 
 var dgram = require("dgram");
 var mclient = dgram.createSocket("udp4");
@@ -98,7 +97,7 @@ uclient.on("message", function (message) {
     new Notification({
       icon: bigIcon,
       body: message.toString(),
-    }).show()
+    }).show();
   } catch (e) {
     console.error("notification error:", e.toString());
   }
