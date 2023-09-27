@@ -1,5 +1,10 @@
 {
 
+    "appId": "com.nettica.agent",
+    "productName": "Nettica Agent",
+    "icon": "build/icon.icns",
+    
+
   "mac": {
     "icon": "build/icon.icns",
     "category": "public.app-category.utilities"

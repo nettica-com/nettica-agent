@@ -665,9 +665,9 @@ export default {
       if (os.platform == "win32") {
         console.log("item = ", item);
         spawn("cmd.exe", ["/c", "wt.exe", "-w", "ssh", "nt", "ssh.exe", name], {
-          windowsHide: false,
+          windowsHide: true,
           detached: true,
-          shell: true,
+          shell: false,
         });
       } else {
         if (process.arch == "arm" || this.device.platform == "raspberry") {

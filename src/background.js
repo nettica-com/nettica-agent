@@ -19,10 +19,18 @@ const path = require("path");
 const fileWatcher = require("chokidar");
 const env = require("../env");
 const os = require("os");
+const { Notification } = require('electron')
 
 var icon = path.join(__static, "./nettica-24.png");
 if (os.platform() == "win32") {
   icon = path.join(__static, "./nettica-24x24.png");
+}
+
+var bigIcon = path.join(__static, "./nettica.png");
+
+if (process.platform === 'win32')
+{
+    app.setAppUserModelId("Nettica Agent");
 }
 
 var { appData } = env;
@@ -42,10 +50,16 @@ if (os.platform() == "darwin") {
 
 //Multicast Client receiving sent messages
 var PORT = 25264;
+var UPORT = 25265;
+
 var MCAST_ADDR = "224.1.1.1"; //same mcast address as Server
+var UCAST_ADDR = "127.0.0.1"
+
 var dgram = require("dgram");
 var mclient = dgram.createSocket("udp4");
+var uclient = dgram.createSocket("udp4");
 
+// Listen on port 0.0.0.0:25264 for DNS queries
 mclient.on("listening", function () {
   var address = mclient.address();
   console.log(
@@ -69,6 +83,32 @@ mclient.on("error", (err) => {
 });
 
 mclient.bind(PORT, "0.0.0.0");
+
+// Listen on port 127.0.0.1:25265 for notifications from the nettica client
+uclient.on("listening", function () {
+  var address = uclient.address();
+  console.log(
+    "UDP Client listening on " + address.address + ":" + address.port
+  );
+});
+
+uclient.on("message", function (message) {
+  console.log("notification message = ", message.toString());
+  try {
+    new Notification({
+      icon: bigIcon,
+      body: message.toString(),
+    }).show()
+  } catch (e) {
+    console.error("notification error:", e.toString());
+  }
+});
+
+uclient.on("error", (err) => {
+  console.error(err);
+});
+
+uclient.bind(UPORT, UCAST_ADDR);
 
 // handle messages from renderer
 ipcMain.on("authenticate", (event, arg) => {
