@@ -670,16 +670,18 @@ export default {
           shell: false,
         });
       } else if (os.platform == "linux") {
-        var child = spawn(
-          "x-terminal-emulator",
-          ["--new-tab", "-e", "ssh", name],
-          {
-            foreground: true,
-            detached: true,
-          }
-        );
-        console.log("child = ", child);
-        if (child.exitCode != null && child.exitCode != 0) {
+        try {
+          var child = spawn(
+            "x-terminal-emulator",
+            ["--new-tab", "-e", "ssh", name],
+            {
+              foreground: true,
+              detached: true,
+            }
+          );
+          console.log("child = ", child);
+        } catch (e) {
+          console.log("Error launching x-terminal-emulator, falling back to exo-open: ", e);
           var child2 = spawn(
             "exo-open",
             ["--launch", "TerminalEmulator", "ssh", name],
