@@ -681,7 +681,10 @@ export default {
           );
           console.log("child = ", child);
         } catch (e) {
-          console.log("Error launching x-terminal-emulator, falling back to exo-open: ", e);
+          console.log(
+            "Error launching x-terminal-emulator, falling back to exo-open: ",
+            e
+          );
           var child2 = spawn(
             "exo-open",
             ["--launch", "TerminalEmulator", "ssh", name],
@@ -804,9 +807,7 @@ export default {
         })
         .then((response) => {
           stats = response.data;
-          if (stats[net] == null) {
-            console.log("Response did not contain a result");
-          } else {
+          if (stats[net] != null) {
             if (this.series.length == 0 || this.seriesInit) {
               // this.series = [response.data.length];
               console.log("seriesInit = %s", this.seriesInit);
@@ -925,7 +926,10 @@ export default {
                     console.log("VPN = ", vpn);
                   })
                   .catch((error) => {
-                    if (error) console.error(error);
+                    if (error) {
+                      console.log("Error = ", error);
+                      alert(error.response.data.error);
+                    }
                   });
               })
               .catch((error) => {
@@ -943,7 +947,10 @@ export default {
                 console.log("VPN = ", vpn);
               })
               .catch((error) => {
-                if (error) console.error(error);
+                if (error) {
+                  console.log("Error = ", error);
+                  alert(error.response.data.error);
+                }
               });
           }
         })

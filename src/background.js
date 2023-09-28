@@ -161,11 +161,8 @@ let mainWindow;
 async function createWindow() {
   try {
     getConfig();
-    //    createAuthWindow();
-    //    authService.refreshTokens();
     createAppWindow();
   } catch (err) {
-    // createAuthWindow();
     console.error("Error creating App Window : ", err);
   }
 }
