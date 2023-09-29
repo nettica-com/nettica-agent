@@ -276,6 +276,7 @@ function createAppWindow() {
     }
   });
 
+  /* Some newer desktops don't show a tray, so just exit on close.
   mainWindow.on("close", function (event) {
     event.preventDefault();
     try {
@@ -285,6 +286,7 @@ function createAppWindow() {
     }
     return false;
   });
+  */
 
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
