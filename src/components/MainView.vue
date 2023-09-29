@@ -680,14 +680,12 @@ export default {
           term = term.replace(/\n/g, "");
           var args = [];
           if (term == "terminator") {
-            args = ["--new-tab"];
+            args = ["--new-tab", "-e", "ssh " + name];
           } else if (term == "gnome-terminal") {
-            args = ["--"];
+            args = ["--", "ssh", name];
           } else {
-            args = ["-e"];
+            args = ["-e", "ssh", name];
           }
-          args.push("ssh", name);
-
           var child = spawn(term, args, {
             foreground: true,
             detached: true,
@@ -695,6 +693,17 @@ export default {
           console.log("child = ", child);
         } catch (e) {
           console.log("Error launching ssh: ", e);
+          if (device.terminal != null) {
+            var parts = device.terminal.split(" ");
+            var term = parts.pop();
+            parts.push("ssh");
+            parts.push(name);
+            var child = spawn(term, parts, {
+              foreground: true,
+              detached: true,
+            });
+            console.log("child3 = ", child);
+          }
         }
       } else if (os.platform == "darwin") {
         child = spawn("open", ["-a", "Terminal", "ssh", name], {
