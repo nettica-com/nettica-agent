@@ -337,6 +337,7 @@ const fs = window.require("fs");
 const D3Network = window.require("vue-d3-network");
 const ipcRenderer = window.require("electron").ipcRenderer;
 const spawn = window.require("child_process").spawn;
+const execSync = window.require("child_process").execSync;
 const env = require("../../env");
 const ApexCharts = window.require("apexcharts");
 const os = window.require("os");
@@ -671,30 +672,29 @@ export default {
         });
       } else if (os.platform == "linux") {
         try {
-          var child = spawn(
-            "x-terminal-emulator",
-            ["--new-tab", "-e", "ssh", name],
-            {
-              foreground: true,
-              detached: true,
-            }
+          var term = execSync(
+            "gsettings get org.gnome.desktop.default-applications.terminal exec"
           );
+          console.log("term = ", term);
+          term = term.toString().replace(/'/g, "");
+          term = term.replace(/\n/g, "");
+          var args = [];
+          if (term == "terminator") {
+            args = ["--new-tab"];
+          } else if (term == "gnome-terminal") {
+            args = ["--"];
+          } else {
+            args = ["-e"];
+          }
+          args.push("ssh", name);
+
+          var child = spawn(term, args, {
+            foreground: true,
+            detached: true,
+          });
           console.log("child = ", child);
         } catch (e) {
-          console.log(
-            "Error launching x-terminal-emulator, falling back to exo-open: ",
-            e
-          );
-          var child2 = spawn(
-            "exo-open",
-            ["--launch", "TerminalEmulator", "ssh", name],
-            {
-              foreground: true,
-              detached: true,
-              shell: true,
-            }
-          );
-          console.log("child2 = ", child2);
+          console.log("Error launching ssh: ", e);
         }
       } else if (os.platform == "darwin") {
         child = spawn("open", ["-a", "Terminal", "ssh", name], {
