@@ -21,12 +21,7 @@ const env = require("../env");
 const os = require("os");
 const { Notification } = require("electron");
 
-var icon = path.join(__static, "./nettica-24.png");
-if (os.platform() == "win32") {
-  icon = path.join(__static, "./nettica-24x24.png");
-}
-
-var bigIcon = path.join(__static, "./nettica.png");
+var icon = path.join(__static, "./nettica.png");
 
 if (process.platform === "win32") {
   app.setAppUserModelId("Nettica Agent");
@@ -95,7 +90,7 @@ uclient.on("message", function (message) {
   console.log("notification message = ", message.toString());
   try {
     new Notification({
-      icon: bigIcon,
+      icon: icon,
       body: message.toString(),
     }).show();
   } catch (e) {
