@@ -693,12 +693,12 @@ export default {
           console.log("child = ", child);
         } catch (e) {
           console.log("Error launching ssh: ", e);
-          if (device.terminal != null) {
-            var parts = device.terminal.split(" ");
-            var term = parts.pop();
+          if (this.device.terminal != null) {
+            parts = this.device.terminal.split(" ");
+            term = parts.pop();
             parts.push("ssh");
             parts.push(name);
-            var child = spawn(term, parts, {
+            child = spawn(term, parts, {
               foreground: true,
               detached: true,
             });
