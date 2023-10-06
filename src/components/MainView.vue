@@ -4,14 +4,12 @@
       <header class="col-md-12">
         <nav class="navbar navbar-dark bg-dark">
           <span>
-            &nbsp;
-            <a class="navbar-brand" href="https://my.nettica.com"
-              ><img
-                class="mr-3"
-                :src="require('../assets/nettica.png')"
-                height="50"
-                alt="nettica"
-            /></a>
+            <img
+              class="mr-3 ml-3"
+              :src="require('../assets/nettica.png')"
+              height="50"
+              alt="nettica"
+            />
             <a class="navbar-brand">nettica.agent</a>
           </span>
           <v-spacer />
@@ -307,6 +305,7 @@
                   :rules="[(v) => !!v || 'Api Key is required']"
                   required
                 />
+                <v-text-field v-model="device.instanceid" label="Instance ID" />
                 <v-switch
                   v-model="autoLaunch"
                   label="Launch at start-up"
@@ -329,6 +328,35 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="dialogAbout" width="400">
+      <v-card>
+        <v-card-text>
+          <v-row>
+            <v-col cols="12">
+              <v-form ref="form" v-model="valid">
+                <div class="text-center">
+                  <h4>Nettica Agent {{ version }}</h4>
+                  <img
+                    class="mr-3"
+                    :src="require('../assets/nettica.png')"
+                    height="100"
+                    alt="nettica"
+                  />
+                  <p>
+                    <v-label @click="launchNettica()"
+                      >https://nettica.com</v-label
+                    >
+                  </p>
+                  <v-btn color="primary" @click="dialogAbout = false">
+                    OK
+                  </v-btn>
+                </div>
+              </v-form>
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 <script>
@@ -339,6 +367,7 @@ const ipcRenderer = window.require("electron").ipcRenderer;
 const spawn = window.require("child_process").spawn;
 const execSync = window.require("child_process").execSync;
 const env = require("../../env");
+const pack = require("../../package");
 const ApexCharts = window.require("apexcharts");
 const os = window.require("os");
 const AutoLaunch = window.require("auto-launch");
@@ -349,6 +378,7 @@ const autoLauncher = new AutoLaunch({
 });
 
 var { serverUrl, appData, apiIdentifier, auth0Domain, clientId } = env;
+var { version } = pack;
 
 if (process.env.ALLUSERSPROFILE != null) {
   appData = process.env.ALLUSERSPROFILE;
@@ -436,6 +466,8 @@ export default {
     selected: "",
     dialogCreate: false,
     dialogSettings: false,
+    dialogAbout: false,
+    version: version,
     autoLaunch: false,
     server: "",
     deviceId: "",
@@ -591,6 +623,11 @@ export default {
       this.autoLaunch = isEnabled;
     });
 
+    ipcRenderer.on("handle-about", (event) => {
+      console.log("handle-about", event, this);
+      this.dialogAbout = true;
+    });
+
     // setInterval(loadNets, 1000);
     setInterval(() => {
       this.oneHour++;
@@ -608,6 +645,9 @@ export default {
         this.getMetrics(this, this.net.netName);
       }
     }, 5000);
+  },
+  displayAbout() {
+    this.dialogAbout = true;
   },
   methods: {
     async logout() {
@@ -1163,7 +1203,9 @@ export default {
             this.device.name +
             "&apiKey=" +
             this.device.apiKey +
-            "&appdata=" +
+            "&instanceid=" +
+            this.device.instanceid,
+          "&appdata=" +
             this.device.appData +
             "&clientid=" +
             this.device.clientid +
@@ -1181,7 +1223,27 @@ export default {
           console.log("Save Settings response = ", response);
         });
     },
-
+    launchNettica() {
+      console.log("launchNettica");
+      if (os.platform == "win32") {
+        spawn("start", ["https://nettica.com"], {
+          detached: true,
+          shell: true,
+        });
+      }
+      if (os.platform == "linux") {
+        spawn("open", ["https://nettica.com"], {
+          detached: true,
+          shell: false,
+        });
+      }
+      if (os.platform == "darwin") {
+        spawn("open", ["https://nettica.com"], {
+          detached: true,
+          shell: false,
+        });
+      }
+    },
     setAutoLaunch() {
       if (this.autoLaunch) {
         autoLauncher.enable();

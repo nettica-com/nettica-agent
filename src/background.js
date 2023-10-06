@@ -219,6 +219,16 @@ function destroyAuthWin() {
   authWindow = null;
 }
 
+function createAboutWindow() {
+  mainWindow.show();
+  // send message to renderer
+  try {
+    mainWindow.webContents.send("handle-about", "about");
+  } catch (e) {
+    console.error("send about to renderer:", e.toString());
+  }
+}
+
 function createAppWindow() {
   // Create the browser window.
   const mainWindowStateKeeper = windowStateKeeper("main");
@@ -401,6 +411,13 @@ app.on("ready", async () => {
   });
 
   const contextMenu = Menu.buildFromTemplate([
+    {
+      label: "About",
+      click: function () {
+        mainWindow.show();
+        createAboutWindow();
+      },
+    },
     {
       label: "Open",
       click: function () {
