@@ -1204,8 +1204,8 @@ export default {
             "&apiKey=" +
             this.device.apiKey +
             "&instanceid=" +
-            this.device.instanceid,
-          "&appdata=" +
+            this.device.instanceid +
+            "&appdata=" +
             this.device.appData +
             "&clientid=" +
             this.device.clientid +
