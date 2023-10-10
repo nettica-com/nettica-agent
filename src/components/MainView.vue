@@ -209,6 +209,7 @@
                   single
                   persistent-hint
                   required
+                  v-on:change="updateDefaults"
                 />
                 <v-text-field
                   v-model="endpoint"
@@ -811,6 +812,7 @@ export default {
         }
       }
       this.netList.selected = this.netList.items[selected];
+      this.updateDefaults(this.netList.selected);
 
       selected = 0;
       this.acntList = { selected: { text: "", value: "" }, items: [] };
@@ -899,6 +901,24 @@ export default {
       // data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       // head: 0,
       // buckets: 12,
+    },
+    updateDefaults(net) {
+      console.log("updateDefaults", net);
+      var selected = 0;
+      for (let i = 0; i < this.myNets.length; i++) {
+        if (this.myNets[i].id == net.value) {
+          selected = i;
+          break;
+        }
+      }
+      this.vpn.current.syncEndpoint =
+        this.myNets[selected].default.syncEndpoint;
+
+      this.vpn.current.hasSSH = this.myNets[selected].default.hasSSH;
+      this.vpn.current.hasRDP = this.myNets[selected].default.hasRDP;
+      this.vpn.current.upnp = this.myNets[selected].default.upnp;
+      this.vpn.current.enableDns = this.myNets[selected].default.enableDns;
+      console.log("updateDefaults = ", this.vpn, this.myNets[selected]);
     },
     create(vpn) {
       console.log("Create VPN: ", vpn);
