@@ -42,43 +42,15 @@ if (os.platform() == "darwin") {
   NetticaConfigPath = "/usr/local/etc/nettica/nettica.json";
 }
 
-//Multicast Client receiving sent messages
+//Unicast Client receiving notification messages
 var PORT = 25264;
-var UPORT = 25265;
-
-var MCAST_ADDR = "224.1.1.1"; //same mcast address as Server
 var UCAST_ADDR = "127.0.0.1";
 
 var dgram = require("dgram");
-var mclient = dgram.createSocket("udp4");
 var uclient = dgram.createSocket("udp4");
 
-// Listen on port 0.0.0.0:25264 for DNS queries
-mclient.on("listening", function () {
-  var address = mclient.address();
-  console.log(
-    "UDP Client listening on " + address.address + ":" + address.port
-  );
-  mclient.setBroadcast(true);
-  mclient.setMulticastTTL(128);
-  mclient.addMembership(MCAST_ADDR);
-});
-
-mclient.on("message", function (message) {
-  try {
-    mainWindow.webContents.send("handle-dns", "" + message);
-  } catch (e) {
-    console.error("send dns query to renderer:", e.toString());
-  }
-});
-
-mclient.on("error", (err) => {
-  console.error(err);
-});
-
-mclient.bind(PORT, "0.0.0.0");
-
 // Listen on port 127.0.0.1:25265 for notifications from the nettica client
+// Notifications can be dns, info, error
 uclient.on("listening", function () {
   var address = uclient.address();
   console.log(
@@ -87,12 +59,24 @@ uclient.on("listening", function () {
 });
 
 uclient.on("message", function (message) {
-  console.log("notification message = ", message.toString());
   try {
-    new Notification({
-      icon: icon,
-      body: message.toString(),
-    }).show();
+
+    var msg = JSON.parse(message);
+
+    if (msg.type == "dns") {
+      try {
+        mainWindow.webContents.send("handle-dns", "" + msg.text);
+      } catch (e) {
+        console.error("send dns query to renderer:", e.toString());
+      }
+    }
+
+    if (msg.type == "info") {
+      new Notification({
+        icon: icon,
+        body: msg.text,
+      }).show();
+    }
   } catch (e) {
     console.error("notification error:", e.toString());
   }
@@ -102,7 +86,7 @@ uclient.on("error", (err) => {
   console.error(err);
 });
 
-uclient.bind(UPORT, UCAST_ADDR);
+uclient.bind(PORT, UCAST_ADDR);
 
 // handle messages from renderer
 ipcMain.on("authenticate", (event, arg) => {
