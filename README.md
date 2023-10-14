@@ -2,6 +2,7 @@
 
 ## Project setup
 ```
+nvm use 16.15.1
 npm install
 ```
 
@@ -20,10 +21,14 @@ npm run electron:build -- --linux deb --arm64 --dir   # arm64 cross compile
 npm run electron:build -- --linux deb --armv7l --dir  # pi cross compile
 
 ```
+### Build for distribution (linux amd64/deb, amd64/rpm, arm7l/deb, arm64/deb, arm64/rpm)
+```
+./build.sh
+```
 
 ### Lints and fixes files
 ```
-npm run lint
+npm run lint --fix
 ```
 
 ### Customize configuration
