@@ -6,7 +6,7 @@
 import MainView from "../components/MainView";
 
 export default {
-  name: "HomeView",
+  name: "MainView",
 
   components: {
     MainView,
