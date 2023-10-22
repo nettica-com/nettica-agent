@@ -22,7 +22,7 @@ function createAuthWindow() {
   } = win.webContents;
 
   const filter = {
-    urls: ["file:///callback*"],
+    urls: ["com.nettica.agent://callback/*"],
   };
 
   webRequest.onBeforeRequest(filter, async ({ url }) => {

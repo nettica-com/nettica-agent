@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="row">
-      <header class="col-md-12">
+      <header>
         <nav class="navbar navbar-dark bg-dark">
           <span>
             <img
@@ -10,7 +10,7 @@
               height="50"
               alt="nettica"
             />
-            <a class="navbar-brand">nettica.agent</a>
+            <span class="navbar-brand">nettica.agent</span>
           </span>
           <v-spacer />
           <span>

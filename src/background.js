@@ -119,6 +119,11 @@ ipcMain.on("logout", () => {
   });
 });
 
+// Scheme must be registered before the app is ready
+protocol.registerSchemesAsPrivileged([
+  { scheme: "com.nettica.agent", privileges: { secure: true, standard: true, supportFetchAPI:true, bypassCSP:true } },
+]);
+
 app.whenReady().then(() => {
   protocol.registerFileProtocol("app", (request, callback) => {
     const url = request.url.substring(6);
@@ -127,11 +132,6 @@ app.whenReady().then(() => {
   });
 });
 const isDevelopment = process.env.NODE_ENV !== "production";
-
-// Scheme must be registered before the app is ready
-protocol.registerSchemesAsPrivileged([
-  { scheme: "app", privileges: { secure: true, standard: true } },
-]);
 
 let tray;
 
@@ -179,10 +179,11 @@ function createAuthWindow() {
   } = authWindow.webContents;
 
   const filter = {
-    urls: ["file:///callback*"],
+    urls: ["com.nettica.agent://callback/agent*"],
   };
 
   webRequest.onBeforeRequest(filter, async ({ url }) => {
+    console.log("onBeforeRequest url = ", url);
     await authService.loadTokens(url);
     // createAppWindow();
     return destroyAuthWin();
@@ -282,13 +283,14 @@ function createAppWindow() {
   });
   */
 
+  createProtocol("com.nettica.agent");
+
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
     mainWindow.loadURL(process.env.WEBPACK_DEV_SERVER_URL);
   } else {
-    createProtocol("mapp");
     // Load the index.html when not in development
-    mainWindow.loadURL("mapp://./index.html");
+    mainWindow.loadURL("com.nettica.agent://./index.html");
   }
 }
 

@@ -4,7 +4,7 @@ const envVariables = require("../../env");
 
 const { apiIdentifier, auth0Domain, clientId } = envVariables;
 
-const redirectUri = `file:///callback`;
+const redirectUri = `com.nettica.agent://callback/agent`;
 
 let accessToken = null;
 let profile = null;
