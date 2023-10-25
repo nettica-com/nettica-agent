@@ -23,10 +23,6 @@ const { Notification } = require("electron");
 
 var icon = path.join(__static, "./nettica.png");
 
-if (process.platform === "win32") {
-  app.setAppUserModelId("Nettica Agent");
-}
-
 var { appData } = env;
 if (process.env.ALLUSERSPROFILE != null) {
   appData = process.env.ALLUSERSPROFILE;
@@ -130,6 +126,9 @@ app.whenReady().then(() => {
     console.log("URL: ", url);
     callback({ path: path.join(`${__dirname}/${url}`) });
   });
+  if (process.platform === "win32") {
+    app.setAppUserModelId("com.nettica.agent");
+  }
 });
 const isDevelopment = process.env.NODE_ENV !== "production";
 
@@ -250,7 +249,6 @@ function createAppWindow() {
   mainWindowStateKeeper.manage(mainWindow);
 
   console.log("icon = ", icon);
-  mainWindow.setTitle("Nettica Agent");
   mainWindow.setIcon(icon);
   //mainWindow.setWindowButtonVisibility(true);
 
@@ -258,6 +256,7 @@ function createAppWindow() {
   // application.isQuiting = false;
 
   mainWindow.on("ready-to-show", function () {
+    mainWindow.setTitle("Nettica Agent");
     mainWindow.show();
     console.log("ready-to-show");
   });

@@ -5,7 +5,7 @@ module.exports = defineConfig({
     electronBuilder: {
       externals: ["vue-d3-network", "chokidar", "apexcharts", "auto-launch"],
       builderOptions: {
-        productName: "nettica.agent",
+        productName: "Nettica Agent",
         files: ["**/*"],
         extraFiles: [
           {
@@ -20,8 +20,8 @@ module.exports = defineConfig({
           },
         ],
       },
-      productName: "nettica.agent",
-      appId: "com.nettica.netticaagent",
+      productName: "Nettica Agent",
+      appId: "com.nettica.agent",
       author: "support@nettica.com",
       description: "Nettica Agent",
       win: {
@@ -39,6 +39,8 @@ module.exports = defineConfig({
             arch: ["x64"],
           },
         ],
+        icon: "build/icon.ico",
+        appId: "com.nettica.agent",
         publisherName: "Nettica Corporation",
         legalTrademarks: "",
         verifyUpdateCodeSignature: false,
@@ -55,7 +57,7 @@ module.exports = defineConfig({
         allowToChangeInstallationDirectory: false,
         createDesktopShortcut: true,
         createStartMenuShortcut: true,
-        artifactName: "${productName}-${version}.${ext}",
+        artifactName: "nettica.agent-${version}.${ext}",
       },
     },
   },

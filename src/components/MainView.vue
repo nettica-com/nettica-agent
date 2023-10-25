@@ -10,7 +10,7 @@
               height="50"
               alt="nettica"
             />
-            <span class="navbar-brand">nettica.agent</span>
+            <span class="navbar-brand">nettica agent</span>
           </span>
           <v-spacer />
           <span>
