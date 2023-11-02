@@ -262,25 +262,27 @@ function createAppWindow() {
   });
 
   mainWindow.on("minimize", function (event) {
-    event.preventDefault();
-    try {
-      mainWindow.hide();
-    } catch (e) {
-      console.log("couldn't hide window ", e);
+    if (process.platform != "linux") {
+      event.preventDefault();
+      try {
+        mainWindow.hide();
+      } catch (e) {
+        console.log("couldn't hide window ", e);
+      }
     }
   });
 
-  /* Some newer desktops don't show a tray, so just exit on close.
   mainWindow.on("close", function (event) {
-    event.preventDefault();
-    try {
-      mainWindow.hide();
-    } catch (e) {
-      console.log("couldn't hide window ", e);
+    if (process.platform != "linux") {
+      event.preventDefault();
+      try {
+        mainWindow.hide();
+      } catch (e) {
+        console.log("couldn't hide window ", e);
+      }
+      return false;
     }
-    return false;
   });
-  */
 
   createProtocol("com.nettica.agent");
 
