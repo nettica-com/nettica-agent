@@ -791,6 +791,7 @@ export default {
       this.netList = { selected: { text: "", value: "" }, items: [] };
 
       var selected = 0;
+      let k = 0;
       for (let i = 0; i < this.myNets.length; i++) {
         if (this.nets != null) {
           // filter out any nets that are already in the list
@@ -803,13 +804,14 @@ export default {
           }
           if (found) continue;
         }
-        this.netList.items[i] = {
+        this.netList.items[k] = {
           text: this.myNets[i].netName,
           value: this.myNets[i].id,
         };
-        if (this.netList.items[i].text == this.vpn.netName) {
-          selected = i;
+        if (this.netList.items[k].text == this.vpn.netName) {
+          selected = k;
         }
+        k++;
       }
       this.netList.selected = this.netList.items[selected];
       this.updateDefaults(this.netList.selected);
