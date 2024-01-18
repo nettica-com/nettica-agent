@@ -29,13 +29,16 @@ if (process.env.ALLUSERSPROFILE != null) {
 }
 
 let NetticaConfigPath = appData + "\\nettica\\nettica.json";
+let NetticaClientPath = appData + "\\nettica\\nettica.conf";
 
 if (os.platform() == "linux") {
   NetticaConfigPath = "/etc/nettica/nettica.json";
+  NetticaClientPath = "/etc/nettica/nettica.conf";
 }
 
 if (os.platform() == "darwin") {
   NetticaConfigPath = "/usr/local/etc/nettica/nettica.json";
+  NetticaClientPath = "/usr/local/etc/nettica/nettica.conf";
 }
 
 //Unicast Client receiving notification messages
@@ -45,7 +48,7 @@ var UCAST_ADDR = "127.0.0.1";
 var dgram = require("dgram");
 var uclient = dgram.createSocket("udp4");
 
-// Listen on port 127.0.0.1:25265 for notifications from the nettica client
+// Listen on port 127.0.0.1:25264 for notifications from the nettica client
 // Notifications can be dns, info, error
 uclient.on("listening", function () {
   var address = uclient.address();
@@ -56,7 +59,6 @@ uclient.on("listening", function () {
 
 uclient.on("message", function (message) {
   try {
-
     var msg = JSON.parse(message);
 
     if (msg.type == "dns") {
@@ -99,7 +101,7 @@ ipcMain.on("authenticate", (event, arg) => {
 
 ipcMain.on("accessToken", (event) => {
   event.returnValue = authService.getAccessToken();
-  console.log("accessToken = ", event.returnValue);
+  console.log("accessToken = ", authService.getAccessToken());
 });
 
 ipcMain.on("logout", () => {
@@ -108,7 +110,8 @@ ipcMain.on("logout", () => {
     height: 600,
     show: false,
   });
-  win.loadURL("https://" + "auth.nettica.com" + "/v2/logout?federated");
+  win.loadURL("https://" + "device.server" + "/api/v1.0/auth/logout");
+  authService.logout();
 
   win.on("ready-to-show", () => {
     win.close();
@@ -117,7 +120,15 @@ ipcMain.on("logout", () => {
 
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
-  { scheme: "com.nettica.agent", privileges: { secure: true, standard: true, supportFetchAPI:true, bypassCSP:true } },
+  {
+    scheme: "com.nettica.agent",
+    privileges: {
+      secure: true,
+      standard: true,
+      supportFetchAPI: true,
+      bypassCSP: true,
+    },
+  },
 ]);
 
 app.whenReady().then(() => {
@@ -154,11 +165,21 @@ function getConfig() {
   }
 }
 
+let device;
+function getDevice() {
+  try {
+    device = JSON.parse(fs.readFileSync(NetticaClientPath));
+  } catch (err) {
+    device = {};
+  }
+  return device;
+}
+
 let authWindow;
 
-function createAuthWindow() {
+async function createAuthWindow() {
   destroyAuthWin();
-
+  getDevice();
   // Create the browser window.
   authWindow = new BrowserWindow({
     width: 600,
@@ -171,20 +192,27 @@ function createAuthWindow() {
   });
   authWindow.setTitle("Authentication");
   authWindow.setIcon(icon);
-  authWindow.loadURL(authService.getAuthenticationURL());
+
+  let codeUrl;
+  await authService.getAuthenticationURL(device).then((url) => {
+    console.log("url = ", url);
+    codeUrl = url;
+  });
+  console.log("codeUrl = ", codeUrl);
+  authWindow.loadURL(codeUrl);
 
   const {
     session: { webRequest },
   } = authWindow.webContents;
 
   const filter = {
+    //    urls: ["com.nettica.agent://callback/agent*", "https://dev.nettica.com/*"],
     urls: ["com.nettica.agent://callback/agent*"],
   };
 
   webRequest.onBeforeRequest(filter, async ({ url }) => {
     console.log("onBeforeRequest url = ", url);
-    await authService.loadTokens(url);
-    // createAppWindow();
+    await authService.loadNetticaTokens(url);
     return destroyAuthWin();
   });
 
@@ -250,10 +278,6 @@ function createAppWindow() {
 
   console.log("icon = ", icon);
   mainWindow.setIcon(icon);
-  //mainWindow.setWindowButtonVisibility(true);
-
-  // let application;
-  // application.isQuiting = false;
 
   mainWindow.on("ready-to-show", function () {
     mainWindow.setTitle("Nettica Agent");
@@ -381,6 +405,7 @@ app.on("activate", () => {
 // Some APIs can only be used after this event occurs.
 app.on("ready", async () => {
   getConfig();
+  getDevice();
   if (isDevelopment && !process.env.IS_TEST) {
     // Install Vue Devtools
     try {
@@ -442,3 +467,9 @@ if (isDevelopment) {
     });
   }
 }
+
+export default {
+  getConfig,
+  getDevice,
+  device,
+};

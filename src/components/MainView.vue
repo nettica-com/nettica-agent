@@ -378,7 +378,7 @@ const autoLauncher = new AutoLaunch({
   path: process.execPath,
 });
 
-var { serverUrl, appData, apiIdentifier, auth0Domain, clientId } = env;
+var { appData } = env;
 var { version } = pack;
 
 if (process.env.ALLUSERSPROFILE != null) {
@@ -432,10 +432,7 @@ export default {
     ],
     loginText: "Login",
     device: {
-      server: serverUrl,
-      apiid: apiIdentifier,
-      authdomain: auth0Domain,
-      clientid: clientId,
+      server: "https://my.nettica.com",
       appData: appData,
       name: os.hostname(),
     },
@@ -594,7 +591,7 @@ export default {
       console.error("nettica.conf does not exist: ", e.toString());
 
       this.device = {};
-      this.device.server = serverUrl;
+      this.device.server = "https://my.nettica.com";
       this.device.sourceAddress = "0.0.0.0";
       this.device.quiet = true;
       this.device.checkInterval = 10;
@@ -602,9 +599,6 @@ export default {
     }
 
     this.device.appData = appData;
-    this.device.authdomain = auth0Domain;
-    this.device.clientid = clientId;
-    this.device.apiid = apiIdentifier;
     this.device.name = os.hostname();
     this.device.os = os.platform();
     this.device.arch = os.arch();
@@ -956,59 +950,26 @@ export default {
     },
     createVPN(vpn) {
       let accessToken = ipcRenderer.sendSync("accessToken");
-      let body = {
-        grant_type: "authorization_code",
-        client_id: this.device.clientid,
-        state: accessToken,
-        code: accessToken,
-        redirect_uri: serverUrl,
-      };
-      axios
-        .post(serverUrl + "/api/v1.0/auth/token", body, {
-          headers: {
-            Authorization: "Bearer " + accessToken,
-          },
-        })
-        .then(() => {
-          if (this.device.id == "") {
-            this.device.name = os.hostname();
-            this.device.accountid = vpn.accountid;
-            axios
-              .post(serverUrl + "/api/v1.0/device", this.device, {
-                headers: {
-                  Authorization: "Bearer " + accessToken,
-                },
-              })
-              .then((response) => {
-                this.device = response.data;
-                console.log("device = ", this.device);
-                vpn.deviceid = this.device.id;
+      console.log("createVPN accessToken = ", accessToken);
 
-                this.saveSettings();
+      if (this.device.id == "") {
+        this.device.name = os.hostname();
+        this.device.accountid = vpn.accountid;
+        axios
+          .post(this.device.server + "/api/v1.0/device", this.device, {
+            headers: {
+              Authorization: "Bearer " + accessToken,
+            },
+          })
+          .then((response) => {
+            this.device = response.data;
+            console.log("device = ", this.device);
+            vpn.deviceid = this.device.id;
 
-                axios
-                  .post(serverUrl + "/api/v1.0/vpn", vpn, {
-                    headers: {
-                      Authorization: "Bearer " + accessToken,
-                    },
-                  })
-                  .then((response) => {
-                    let vpn = response.data;
-                    console.log("VPN = ", vpn);
-                  })
-                  .catch((error) => {
-                    if (error) {
-                      console.log("Error = ", error);
-                      alert(error.response.data.error);
-                    }
-                  });
-              })
-              .catch((error) => {
-                if (error) console.error(error);
-              });
-          } else {
+            this.saveSettings();
+
             axios
-              .post(serverUrl + "/api/v1.0/vpn", vpn, {
+              .post(this.device.server + "/api/v1.0/vpn", vpn, {
                 headers: {
                   Authorization: "Bearer " + accessToken,
                 },
@@ -1023,83 +984,66 @@ export default {
                   alert(error.response.data.error);
                 }
               });
-          }
-        })
-        .catch((error) => {
-          if (error) throw new Error(error);
-        });
-    },
-    async getAccountsList() {
-      return new Promise((resolve, reject) => {
-        let accessToken = ipcRenderer.sendSync("accessToken");
-        if (!accessToken) return reject(new Error("no access token available"));
-        let body = {
-          grant_type: "authorization_code",
-          client_id: this.device.clientid,
-          state: accessToken,
-          code: accessToken,
-          redirect_uri: serverUrl,
-        };
+          })
+          .catch((error) => {
+            if (error) console.error(error);
+          });
+      } else {
         axios
-          .post(serverUrl + "/api/v1.0/auth/token", body, {
+          .post(this.device.server + "/api/v1.0/vpn", vpn, {
             headers: {
               Authorization: "Bearer " + accessToken,
             },
           })
-          .then(() => {
-            axios
-              .get(serverUrl + "/api/v1.0/accounts/", {
-                headers: {
-                  Authorization: "Bearer " + accessToken,
-                },
-              })
-              .then((response) => {
-                this.myAccounts = response.data;
-                resolve();
-              })
-              .catch((error) => {
-                if (error) console.error(error);
-              });
+          .then((response) => {
+            let vpn = response.data;
+            console.log("VPN = ", vpn);
           })
           .catch((error) => {
-            if (error) throw new Error(error);
+            if (error) {
+              console.log("Error = ", error);
+              alert(error.response.data.error);
+            }
+          });
+      }
+    },
+    async getAccountsList() {
+      return new Promise((resolve, reject) => {
+        let accessToken = ipcRenderer.sendSync("accessToken");
+        console.log("getAccountsList accessToken = ", accessToken);
+        if (!accessToken) return reject(new Error("no access token available"));
+        axios
+          .get(this.device.server + "/api/v1.0/accounts/", {
+            headers: {
+              Authorization: "Bearer " + accessToken,
+            },
+          })
+          .then((response) => {
+            this.myAccounts = response.data;
+            resolve();
+          })
+          .catch((error) => {
+            if (error) console.error(error);
           });
       });
     },
     async getNetList() {
       return new Promise((resolve, reject) => {
         let accessToken = ipcRenderer.sendSync("accessToken");
+        console.log("getNetList accessToken = ", accessToken);
         if (!accessToken) return reject(new Error("no access token available"));
-        let body = {
-          grant_type: "authorization_code",
-          client_id: this.device.clientid,
-          state: accessToken,
-          code: accessToken,
-          redirect_uri: serverUrl,
-        };
         axios
-          .post(serverUrl + "/api/v1.0/auth/token", body, {
+          .get(this.device.server + "/api/v1.0/net", {
             headers: {
               Authorization: "Bearer " + accessToken,
             },
           })
-          .then(() => {
-            axios
-              .get(serverUrl + "/api/v1.0/net", {
-                headers: {
-                  Authorization: "Bearer " + accessToken,
-                },
-              })
-              .then((response) => {
-                this.myNets = response.data;
-                resolve();
-              })
-              .catch((error) => {
-                if (error) console.error(error);
-              });
+          .then((response) => {
+            this.myNets = response.data;
+            resolve();
           })
           .catch((error) => {
-            if (error) throw new Error(error);
+            if (error) console.error(error);
           });
       });
     },
@@ -1133,13 +1077,7 @@ export default {
         let accessToken = ipcRenderer.sendSync("accessToken");
         if (!accessToken) ipcRenderer.sendSync("authenticate");
         if (!accessToken) accessToken = ipcRenderer.sendSync("accessToken");
-        let body = {
-          grant_type: "authorization_code",
-          client_id: this.device.clientid,
-          state: accessToken,
-          code: accessToken,
-          redirect_uri: serverUrl,
-        };
+
         let vpn = null;
         for (let i = 0; i < net.vpns.length; i++) {
           if (net.vpns[i].deviceid == this.device.id) {
@@ -1153,33 +1091,22 @@ export default {
           return reject(new Error("local vpn not found on device"));
         }
         axios
-          .post(serverUrl + "/api/v1.0/auth/token", body, {
+          .patch(this.device.server + "/api/v1.0/vpn/" + vpn.id, vpn, {
             headers: {
               Authorization: "Bearer " + accessToken,
             },
           })
           .then(() => {
-            axios
-              .patch(serverUrl + "/api/v1.0/vpn/" + vpn.id, vpn, {
-                headers: {
-                  Authorization: "Bearer " + accessToken,
-                },
-              })
-              .then(() => {
-                if (!vpn.enable) {
-                  this.stopService(vpn.netName);
-                }
-                resolve();
-              })
-              .catch((error) => {
-                if (error) console.error(error);
-                if (!vpn.enable) {
-                  this.stopService(vpn.netName);
-                }
-              });
+            if (!vpn.enable) {
+              this.stopService(vpn.netName);
+            }
+            resolve();
           })
           .catch((error) => {
-            if (error) throw new Error(error);
+            if (error) console.error(error);
+            if (!vpn.enable) {
+              this.stopService(vpn.netName);
+            }
           });
       });
     },
@@ -1229,12 +1156,6 @@ export default {
             this.device.instanceid +
             "&appdata=" +
             this.device.appData +
-            "&clientid=" +
-            this.device.clientid +
-            "&authdomain=" +
-            this.device.authdomain +
-            "&apiid=" +
-            this.device.apiid +
             "&accountid=" +
             this.device.accountid,
           {
@@ -1289,7 +1210,6 @@ export default {
       this.seriesInit = true;
       this.netName = this.net.netName;
       this.showChart = true;
-      // this.getMetrics(this.net.netName);
 
       for (let i = 0; i < this.net.vpns.length; i++) {
         if (this.net.vpns[i].netName == name) {

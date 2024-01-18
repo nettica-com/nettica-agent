@@ -1,89 +1,75 @@
 const request = require("request");
 const url = require("url");
-const envVariables = require("../../env");
-
-const { apiIdentifier, auth0Domain, clientId } = envVariables;
 
 const redirectUri = `com.nettica.agent://callback/agent`;
 
 let accessToken = null;
-let profile = null;
-let refreshToken = null;
+
+let client_id = null;
+let state = null;
+let device = null;
 
 function getAccessToken() {
   return accessToken;
 }
 
-function getProfile() {
-  return profile;
-}
+async function getAuthenticationURL(d) {
+  // make a http get request to {server}/api/v1.0/auth/oauth2_url
+  // the response will be the url to redirect to for oauth2 authentication
+  // the response will be in the form of a json object
 
-function getAuthenticationURL() {
-  return (
-    "https://" +
-    auth0Domain +
-    "/authorize?" +
-    "audience=" +
-    apiIdentifier +
-    "&" +
-    "scope=openid profile email offline_access&" +
-    "response_type=code&" +
-    "client_id=" +
-    clientId +
-    "&" +
-    "redirect_uri=" +
-    redirectUri
-  );
-}
-
-function refreshTokens() {
   return new Promise((resolve, reject) => {
-    refreshToken = ""; // keytar.getPassword(keytarService, keytarAccount);
+    device = d;
 
-    if (!refreshToken) return reject(new Error("no refresh token available"));
+    const authUrl =
+      device.server +
+      "/api/v1.0/auth/oauth2_url?redirect_uri=com.nettica.agent://callback/agent";
 
-    const refreshOptions = {
-      method: "POST",
-      url: `https://${auth0Domain}/oauth/token`,
-      headers: { "content-type": "application/json" },
-      body: {
-        grant_type: "refresh_token",
-        client_id: clientId,
-        refresh_token: refreshToken,
+    console.log("authUrl = ", authUrl);
+
+    const options = {
+      method: "GET",
+      url: authUrl,
+      headers: {
+        "content-type": "application/json",
       },
-      json: true,
     };
 
-    request(refreshOptions, function (error, response, body) {
+    request(options, (error, resp, body) => {
       if (error) {
         logout();
-        return reject(new Error(error));
+        return reject(error);
       }
 
-      accessToken = body.access_token;
+      const responseBody = JSON.parse(body);
+      console.log("responseBody = ", responseBody);
 
-      global.accessToken = accessToken;
+      client_id = responseBody.clientId;
+      state = responseBody.state;
 
-      resolve();
+      resolve(responseBody.codeUrl);
     });
   });
 }
 
-function loadTokens(callbackURL) {
+function loadNetticaTokens(callbackURL) {
   return new Promise((resolve, reject) => {
     const urlParts = url.parse(callbackURL, true);
     const query = urlParts.query;
 
     const exchangeOptions = {
       grant_type: "authorization_code",
-      client_id: clientId,
+      clientId: client_id,
       code: query.code,
+      state: state,
       redirect_uri: redirectUri,
     };
 
+    console.log("exchangeOptions = ", exchangeOptions);
+
     const options = {
       method: "POST",
-      url: `https://${auth0Domain}/oauth/token`,
+      url: `${device.server}/api/v1.0/auth/oauth2_exchange`,
       headers: {
         "content-type": "application/json",
       },
@@ -97,9 +83,8 @@ function loadTokens(callbackURL) {
       }
 
       const responseBody = JSON.parse(body);
-      accessToken = responseBody.access_token;
-      global.accessToken = accessToken;
-      refreshToken = responseBody.refresh_token;
+      console.log("responseBody = ", responseBody);
+      accessToken = responseBody;
 
       resolve();
     });
@@ -108,20 +93,11 @@ function loadTokens(callbackURL) {
 
 async function logout() {
   accessToken = null;
-  profile = null;
-  refreshToken = null;
-}
-
-function getLogOutUrl() {
-  return `https://${auth0Domain}/v2/logout`;
 }
 
 export default {
   getAccessToken,
   getAuthenticationURL,
-  getProfile,
-  loadTokens,
+  loadNetticaTokens,
   logout,
-  getLogOutUrl,
-  refreshTokens,
 };
