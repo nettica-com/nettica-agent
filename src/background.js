@@ -90,7 +90,7 @@ uclient.bind(PORT, UCAST_ADDR);
 ipcMain.on("authenticate", (event, arg) => {
   console.log(arg);
   try {
-    createAuthWindow();
+    createAuthWindow(true);
     // authService.loadTokens();
   } catch (err) {
     console.error("Error creating Auth Window : ", err);
@@ -104,18 +104,27 @@ ipcMain.on("accessToken", (event) => {
   console.log("accessToken = ", authService.getAccessToken());
 });
 
-ipcMain.on("logout", () => {
+ipcMain.handle("logout", (event) => {
+  console.log("*** logout received ***");
   const win = new BrowserWindow({
     width: 800,
     height: 600,
     show: false,
   });
-  win.loadURL("https://" + device.server + "/api/v1.0/auth/logout?redirect_url=com.nettica.agent://callback/agent");
-  authService.logout();
-
+  
+  win.loadURL(
+    device.server +
+      "/api/v1.0/auth/logout?redirect_url=com.nettica.agent://callback/agent"
+  );
   win.on("ready-to-show", () => {
+    console.log("ready-to-show logout window");
     win.close();
+    authService.logout();
   });
+
+  console.log(" *** logged out ***");
+
+  event.returnValue = "logged out";
 });
 
 // Scheme must be registered before the app is ready
@@ -177,7 +186,7 @@ function getDevice() {
 
 let authWindow;
 
-async function createAuthWindow() {
+async function createAuthWindow(login) {
   destroyAuthWin();
   getDevice();
   // Create the browser window.
@@ -193,13 +202,20 @@ async function createAuthWindow() {
   authWindow.setTitle("Authentication");
   authWindow.setIcon(icon);
 
-  let codeUrl;
-  await authService.getAuthenticationURL(device).then((url) => {
-    console.log("url = ", url);
-    codeUrl = url;
-  });
-  console.log("codeUrl = ", codeUrl);
-  authWindow.loadURL(codeUrl);
+  if (!login) {
+    authWindow.loadURL(
+      device.server +
+        "/api/v1.0/auth/logout?redirect_uri=com.nettica.agent://callback/agent"
+    );
+  } else {
+    let codeUrl;
+    await authService.getAuthenticationURL(device).then((url) => {
+      console.log("url = ", url);
+      codeUrl = url;
+    });
+    console.log("codeUrl = ", codeUrl);
+    authWindow.loadURL(codeUrl);
+  }
 
   const {
     session: { webRequest },
@@ -212,6 +228,10 @@ async function createAuthWindow() {
 
   webRequest.onBeforeRequest(filter, async ({ url }) => {
     console.log("onBeforeRequest url = ", url);
+    if (url.includes("com.nettica.agent://callback/agent/logout")) {
+      console.log("*** logout ***");
+      return destroyAuthWin();
+    }
     await authService.loadNetticaTokens(url);
     return destroyAuthWin();
   });

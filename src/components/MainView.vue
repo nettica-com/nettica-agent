@@ -358,6 +358,24 @@
         </v-card-text>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="dialogLogout" width="400">
+      <v-card>
+        <v-card-text>
+          <v-row>
+            <v-col cols="12">
+              <v-form ref="form">
+                <div class="text-center">
+                  <p>You have been logged out</p>
+                  <v-btn color="primary" @click="dialogLogout = false">
+                    OK
+                  </v-btn>
+                </div>
+              </v-form>
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 <script>
@@ -646,10 +664,11 @@ export default {
   },
   methods: {
     async logout() {
-      ipcRenderer.send("logout");
-
-      alert("You have been logged out");
       this.loginText = "Login";
+
+      this.callLogout();
+      this.dialogLogout = true;
+      console.log("logout - after callLogout");
     },
     async login() {
       if (this.loginText == "Login") {
@@ -1006,6 +1025,14 @@ export default {
             }
           });
       }
+    },
+    async callLogout() {
+      return new Promise((resolve) => {
+        console.log("callLogout");
+        ipcRenderer.invoke("logout");
+        console.log("callLogout - after logout");
+        resolve();
+      });
     },
     async getAccountsList() {
       return new Promise((resolve, reject) => {
