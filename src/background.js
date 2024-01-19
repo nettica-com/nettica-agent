@@ -110,7 +110,7 @@ ipcMain.on("logout", () => {
     height: 600,
     show: false,
   });
-  win.loadURL("https://" + device.server + "/api/v1.0/auth/logout");
+  win.loadURL("https://" + device.server + "/api/v1.0/auth/logout?redirect_url=com.nettica.agent://callback/agent");
   authService.logout();
 
   win.on("ready-to-show", () => {
