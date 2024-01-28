@@ -297,14 +297,10 @@
                 <v-text-field
                   v-model="device.id"
                   label="Device ID"
-                  :rules="[(v) => !!v || 'Device ID is required']"
-                  required
                 />
                 <v-text-field
                   v-model="device.apiKey"
                   label="Api Key"
-                  :rules="[(v) => !!v || 'Api Key is required']"
-                  required
                 />
                 <v-text-field v-model="device.instanceid" label="Instance ID" />
                 <v-switch
