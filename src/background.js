@@ -91,12 +91,11 @@ ipcMain.on("authenticate", (event, arg) => {
   console.log(arg);
   try {
     createAuthWindow(true);
-    // authService.loadTokens();
   } catch (err) {
     console.error("Error creating Auth Window : ", err);
   }
 
-  event.returnValue = "something";
+  event.returnValue = authService.getAccessToken();
 });
 
 ipcMain.on("accessToken", (event) => {
@@ -111,7 +110,7 @@ ipcMain.handle("logout", (event) => {
     height: 600,
     show: false,
   });
-  
+
   win.loadURL(
     device.server +
       "/api/v1.0/auth/logout?redirect_url=com.nettica.agent://callback/agent"

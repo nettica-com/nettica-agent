@@ -294,14 +294,8 @@
                   ]"
                   required
                 />
-                <v-text-field
-                  v-model="device.id"
-                  label="Device ID"
-                />
-                <v-text-field
-                  v-model="device.apiKey"
-                  label="Api Key"
-                />
+                <v-text-field v-model="device.id" label="Device ID" />
+                <v-text-field v-model="device.apiKey" label="Api Key" />
                 <v-text-field v-model="device.instanceid" label="Instance ID" />
                 <v-switch
                   v-model="autoLaunch"
@@ -345,24 +339,6 @@
                     >
                   </p>
                   <v-btn color="primary" @click="dialogAbout = false">
-                    OK
-                  </v-btn>
-                </div>
-              </v-form>
-            </v-col>
-          </v-row>
-        </v-card-text>
-      </v-card>
-    </v-dialog>
-    <v-dialog v-model="dialogLogout" width="400">
-      <v-card>
-        <v-card-text>
-          <v-row>
-            <v-col cols="12">
-              <v-form ref="form">
-                <div class="text-center">
-                  <p>You have been logged out</p>
-                  <v-btn color="primary" @click="dialogLogout = false">
                     OK
                   </v-btn>
                 </div>
@@ -663,13 +639,12 @@ export default {
       this.loginText = "Login";
 
       this.callLogout();
-      this.dialogLogout = true;
       console.log("logout - after callLogout");
+      alert("You have been logged out");
     },
     async login() {
       if (this.loginText == "Login") {
         ipcRenderer.sendSync("authenticate");
-
         this.loginText = "Logout";
         this.logged_in = true;
       } else {
