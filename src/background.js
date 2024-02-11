@@ -222,7 +222,7 @@ async function createAuthWindow(login) {
 
   const filter = {
     //    urls: ["com.nettica.agent://callback/agent*", "https://dev.nettica.com/*"],
-    urls: ["com.nettica.agent://callback/agent*"],
+    urls: ["com.nettica.agent://callback/agent*", device.server  + "/?state*"],
   };
 
   webRequest.onBeforeRequest(filter, async ({ url }) => {
