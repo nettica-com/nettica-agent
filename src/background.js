@@ -179,6 +179,7 @@ function getDevice() {
     device = JSON.parse(fs.readFileSync(NetticaClientPath));
   } catch (err) {
     device = {};
+    device.server = "https://my.nettica.com";
   }
   return device;
 }
