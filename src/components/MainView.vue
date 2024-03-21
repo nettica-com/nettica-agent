@@ -30,10 +30,10 @@
             >
               <img
                 :src="require('../assets/hub.svg')"
-                height="26"
+                height="24"
                 alt="nettica"
               />
-              Add Network
+              Join Network
             </button>
             &nbsp;
             <button class="btn btn-danger" @click="login()" type="button">
