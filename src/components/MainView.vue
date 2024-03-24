@@ -119,7 +119,7 @@
         </v-expansion-panel>
       </v-expansion-panels>
     </div>
-    <h4 style="align: center">{{ netName }}</h4>
+    <h4 style="text-align: center">{{ netName }}</h4>
     <v-row id="exp" dense>
       <v-col cols="4" class="ml-4">
         <div class="chart-wrapper" v-show="showChart">
