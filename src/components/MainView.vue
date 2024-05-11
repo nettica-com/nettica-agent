@@ -291,23 +291,41 @@
                   :rules="[(v) => !!v || 'friendly name is required']"
                   required
                 />
-                <v-text-field
-                  v-model="device.server"
-                  label="Server"
-                  :rules="[
-                    (v) =>
-                      !!v || 'server is required, eg. https://my.nettica.com/',
-                  ]"
-                  required
-                />
-                <v-text-field v-model="device.id" label="Device ID" />
-                <v-text-field v-model="device.apiKey" label="Api Key" />
-                <v-text-field v-model="device.instanceid" label="Instance ID" />
+                <v-text-field v-model="device.ezcode" label="EZ-Code" />
                 <v-switch
                   v-model="autoLaunch"
                   label="Launch at start-up"
                   @click="setAutoLaunch()"
                 />
+                <v-expansion-panels>
+                  <v-expansion-panel>
+                    <v-expansion-panel-header
+                      dark
+                      style="padding: 12px 0px 12px 0px"
+                      >Advanced Configuration</v-expansion-panel-header
+                    >
+                    <v-expansion-panel-content>
+                      <v-col cols="12" style="padding: 12px 0px 12px 0px">
+                        <v-text-field
+                          v-model="device.server"
+                          label="Server"
+                          :rules="[
+                            (v) =>
+                              !!v ||
+                              'server is required, eg. https://my.nettica.com/',
+                          ]"
+                          required
+                        />
+                        <v-text-field v-model="device.id" label="Device ID" />
+                        <v-text-field v-model="device.apiKey" label="Api Key" />
+                        <v-text-field
+                          v-model="device.instanceid"
+                          label="Instance ID"
+                        />
+                      </v-col>
+                    </v-expansion-panel-content>
+                  </v-expansion-panel>
+                </v-expansion-panels>
               </v-form>
             </v-col>
           </v-row>
@@ -1158,6 +1176,8 @@ export default {
             this.device.name +
             "&apiKey=" +
             this.device.apiKey +
+            "&ezcode=" +
+            this.device.ezcode +
             "&instanceid=" +
             this.device.instanceid +
             "&appdata=" +
