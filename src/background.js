@@ -359,8 +359,18 @@ function startWatcher(path) {
         console.log("Add - Config = ", config);
         try {
           mainWindow.webContents.send("handle-config", config.config);
+          mainWindow.webContents.send("handle-device", config.device);
         } catch (e) {
           console.error("send config to renderer:", e.toString());
+        }
+      }
+      if (path.includes("nettica.conf")) {
+        getDevice();
+        console.log("Add - Device = ", device);
+        try {
+          mainWindow.webContents.send("handle-device", device);
+        } catch (e) {
+          console.error("send device to renderer:", e.toString());
         }
       }
       console.log("File", path, "has been added");
@@ -378,6 +388,16 @@ function startWatcher(path) {
           console.error("send config to renderer:", e.toString());
         }
       }
+      if (path.includes("nettica.conf")) {
+        getDevice();
+        console.log("Change - Device = ", device);
+        try {
+          mainWindow.webContents.send("handle-device", device);
+        } catch (e) {
+          console.error("send device to renderer:", e.toString());
+        }
+      }
+
       console.log("File", path, "has been changed");
     })
     .on("unlink", function (path) {
@@ -390,6 +410,15 @@ function startWatcher(path) {
           console.error("send config to renderer:", e.toString());
         }
       }
+      if (path.includes("nettica.conf")) {
+        getDevice();
+        try {
+          mainWindow.webContents.send("handle-device", device);
+        } catch (e) {
+          console.error("send device to renderer:", e.toString());
+        }
+      }
+
       console.log("File", path, "has been removed");
     })
     .on("unlinkDir", function (path) {
@@ -471,6 +500,7 @@ app.on("ready", async () => {
   createWindow();
 
   startWatcher(NetticaConfigPath);
+  startWatcher(NetticaClientPath);
 });
 
 // Exit cleanly on request from parent process in development mode.

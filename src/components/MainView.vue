@@ -418,6 +418,14 @@ ipcRenderer.on("handle-config", (e, arg) => {
   Nets = arg;
   console.log("Nets updated: ", Nets);
 });
+
+let Device;
+ipcRenderer.on("handle-device", (e, arg) => {
+  // document window
+  Device = arg;
+  console.log("Device updated: ", Device);
+});
+
 let Queries = [];
 ipcRenderer.on("handle-dns", (e, arg) => {
   let add = true;
@@ -585,7 +593,8 @@ export default {
   },
   created() {
     this.$vuetify.theme.dark = true;
-    let config = [];
+    let config = {};
+    config.config = [];
 
     this.chart = new ApexCharts(
       window.document.querySelector("chart"),
@@ -649,6 +658,7 @@ export default {
 
         this.oneHour = 0;
       }
+      this.loadDevice();
       this.loadNets();
       this.loadQueries();
       if (this.net != null) {
@@ -676,6 +686,23 @@ export default {
         this.loginText = "Login";
         this.logged_in = false;
         await this.logout();
+      }
+    },
+    loadDevice() {
+      if (Device) {
+        console.log("loadDevice - Device = ", Device);
+        this.device = Device;
+        Device = null;
+        // find the local host in a net and set the enable flag on the net
+        if (this.nets != null) {
+          for (let i = 0; i < this.nets.length; i++) {
+            for (let j = 0; j < this.nets[i].vpns.length; j++) {
+              if (this.nets[i].vpns[j].deviceid == this.device.id) {
+                this.nets[i].enable = this.nets[i].vpns[j].enable;
+              }
+            }
+          }
+        }
       }
     },
     loadNets() {
