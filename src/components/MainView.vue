@@ -175,7 +175,7 @@
     </v-row>
     <v-dialog v-model="dialogCreate" max-width="550">
       <v-card>
-        <v-card-title class="headline">Add to Network</v-card-title>
+        <v-card-title class="headline">Join Network</v-card-title>
         <v-card-text>
           <v-row>
             <v-col cols="12">
@@ -247,10 +247,16 @@
                     </td>
                   </tr>
                   <tr>
-                    <td colspan="2">
+                    <td>
+                      <v-switch
+                        v-model="vpn.current.failsafe"
+                        label="FailSafe"
+                      />
+                    </td>
+                    <td>
                       <v-switch
                         v-model="vpn.current.enableDns"
-                        label="Enable Nettica DNS"
+                        label="Nettica DNS"
                       />
                     </td>
                   </tr>
@@ -438,6 +444,7 @@ export default {
       current: {
         syncEndpoint: false,
         upnp: false,
+        failsafe: false,
         enableDns: false,
         hasSSH: false,
         hasRDP: false,
@@ -903,6 +910,7 @@ export default {
       this.vpn.current.hasSSH = this.myNets[selected].default.hasSSH;
       this.vpn.current.hasRDP = this.myNets[selected].default.hasRDP;
       this.vpn.current.upnp = this.myNets[selected].default.upnp;
+      this.vpn.current.failsafe = this.myNets[selected].default.failsafe;
       this.vpn.current.enableDns = this.myNets[selected].default.enableDns;
       console.log("updateDefaults = ", this.vpn, this.myNets[selected]);
     },
