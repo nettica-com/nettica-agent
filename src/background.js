@@ -264,7 +264,7 @@ function createAboutWindow() {
 function createAppWindow() {
   // Create the browser window.
   const mainWindowStateKeeper = windowStateKeeper("main");
-  mainWindowStateKeeper.defaultWidth = 1200;
+  mainWindowStateKeeper.defaultWidth = 420;
   mainWindowStateKeeper.defaultHeight = 800;
 
   mainWindow = new BrowserWindow({

@@ -180,24 +180,6 @@
           <v-row>
             <v-col cols="12">
               <v-form ref="form" v-model="valid">
-                <v-text-field
-                  v-model="vpnName"
-                  label="DNS name"
-                  :rules="[(v) => !!v || 'dns name is required']"
-                  required
-                />
-                <v-select
-                  return-object
-                  v-model="acntList.selected"
-                  :items="acntList.items"
-                  item-text="text"
-                  item-value="value"
-                  label="For this account"
-                  :rules="[(v) => !!v || 'Account is required']"
-                  single
-                  persistent-hint
-                  required
-                />
                 <v-select
                   return-object
                   v-model="netList.selected"
@@ -212,13 +194,15 @@
                   v-on:change="updateDefaults"
                 />
                 <v-text-field
-                  v-model="endpoint"
-                  label="Public endpoint for clients"
+                  v-model="vpnName"
+                  label="DNS name"
+                  :rules="[rules.required, rules.host]"
+                  required
                 />
                 <v-text-field
-                  v-model="listenPort"
-                  type="number"
-                  label="Listen port"
+                  v-model="endpoint"
+                  label="Public endpoint for clients"
+                  :rules="[rules.ipport]"
                 />
                 <table width="100%">
                   <tr>
@@ -505,6 +489,22 @@ export default {
     showDns: false,
     logged_in: false,
     timer_running: false,
+    rules: {
+      required: (value) => !!value || "Required.",
+      email: (v) => /.+@.+\..+/.test(v) || "E-mail must be valid",
+      host: (v) =>
+        /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9])$/.test(
+          v
+        ) ||
+        "Only letters, numbers, dots and hyphens are allowed. Must start and end with a letter or number.",
+      ipport: (v) =>
+        !v ||
+        (v && v.length == 0) ||
+        /^(((\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,5}\b)|(\[([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\]:[0-9]{1,5})|^$)(,\s+((\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,5}\b)|(\[([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\]:[0-9]{1,5})|^$))*)$/.test(
+          v
+        ) ||
+        "If present, must be valid IPv4 or IPv6 address and port",
+    },
     goptions: {
       grid: {
         show: true,
@@ -949,6 +949,8 @@ export default {
           break;
         }
       }
+
+      this.vpnName = this.device.name + "." + this.myNets[selected].netName;
       this.vpn.current.syncEndpoint =
         this.myNets[selected].default.syncEndpoint;
 
@@ -979,14 +981,31 @@ export default {
         console.log("Error getting keypair: ", e);
       }
 
+      var net = null;
+      for (let i = 0; i < this.myNets.length; i++) {
+        if (this.myNets[i].id == this.netList.selected.value) {
+          net = this.myNets[i];
+          break;
+        }
+      }
+
       this.vpn.name = this.vpnName;
       this.vpn.current.endpoint = this.endpoint;
-      this.vpn.current.listenPort = this.listenPort;
-      this.vpn.current.listenPort = parseInt(this.vpn.current.listenPort, 10);
-      this.vpn.netName = this.netList.selected.text;
-      this.vpn.netid = this.netList.selected.value;
+      this.vpn.current.listenPort = 0;
+
+      // get the listen port from the endpoint field if it is there
+      if (
+        this.vpn.current.endpoint != null &&
+        this.vpn.current.endpoint != "" &&
+        this.vpn.current.endpoint.indexOf(":") != -1
+      ) {
+        let parts = this.vpn.current.endpoint.split(":");
+        this.vpn.current.listenPort = parseInt(parts[parts.length - 1], 10);
+      }
+      this.vpn.netName = net.netName;
+      this.vpn.accountid = net.accountid;
+      this.vpn.netid = net.id;
       this.vpn.deviceid = this.device.id;
-      this.vpn.accountid = this.acntList.selected.value;
       this.dialogCreate = false;
       console.log("createVPN vpn = ", this.vpn);
       this.createVPN(vpn);
