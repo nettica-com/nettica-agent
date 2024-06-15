@@ -370,11 +370,6 @@ const pack = require("../../package");
 const ApexCharts = window.require("apexcharts");
 const os = window.require("os");
 const AutoLaunch = window.require("auto-launch");
-// query the value of autoLaunch
-const autoLauncher = new AutoLaunch({
-  name: "netticaagent",
-  path: process.execPath,
-});
 
 var { appData } = env;
 var { version } = pack;
@@ -383,18 +378,28 @@ if (process.env.ALLUSERSPROFILE != null) {
   appData = process.env.ALLUSERSPROFILE;
 }
 
+
+let xPath = null;
 let NetticaConfigPath = appData + "\\nettica\\nettica.json";
 let NetticaClientPath = appData + "\\nettica\\nettica.conf";
 
 if (os.platform() == "linux") {
+  xPath = `/opt/Nettica\ Agent/nettica.agent`;      // have to fix it up because of the space in the path
   NetticaConfigPath = "/etc/nettica/nettica.json";
   NetticaClientPath = "/etc/nettica/nettica.conf";
 }
 
 if (os.platform() == "darwin") {
+  xPath = null;
   NetticaConfigPath = "/usr/local/etc/nettica/nettica.json";
   NetticaClientPath = "/usr/local/etc/nettica/nettica.conf";
 }
+
+// setup autoLaunch
+const autoLauncher = new AutoLaunch({
+  name: "nettica.agent",
+  path: xPath,
+});
 
 let Nets;
 ipcRenderer.on("handle-config", (e, arg) => {
