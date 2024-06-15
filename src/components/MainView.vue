@@ -378,13 +378,12 @@ if (process.env.ALLUSERSPROFILE != null) {
   appData = process.env.ALLUSERSPROFILE;
 }
 
-
 let xPath = null;
 let NetticaConfigPath = appData + "\\nettica\\nettica.json";
 let NetticaClientPath = appData + "\\nettica\\nettica.conf";
 
 if (os.platform() == "linux") {
-  xPath = `/opt/Nettica\ Agent/nettica.agent`;      // have to fix it up because of the space in the path
+  xPath = `/opt/Nettica\\ Agent/nettica.agent`; // have to fix it up because of the space in the path
   NetticaConfigPath = "/etc/nettica/nettica.json";
   NetticaClientPath = "/etc/nettica/nettica.conf";
 }
