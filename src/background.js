@@ -209,9 +209,9 @@ async function createAuthWindow(login) {
     );
   } else {
     let codeUrl;
-    await authService.getAuthenticationURL(device).then((url) => {
-      console.log("url = ", url);
-      codeUrl = url;
+    await authService.getAuthenticationURL(device).then((rsp) => {
+      console.log("rsp.codeUrl = ", rsp.codeUrl);
+      codeUrl = rsp.codeUrl + '&client_id=' + rsp.clientId;
     });
     console.log("codeUrl = ", codeUrl);
     authWindow.loadURL(codeUrl);
@@ -223,7 +223,7 @@ async function createAuthWindow(login) {
 
   const filter = {
     //    urls: ["com.nettica.agent://callback/agent*", "https://dev.nettica.com/*"],
-    urls: ["com.nettica.agent://callback/agent*", device.server + "/*state=*"],
+    urls: ["com.nettica.agent://callback/agent*", device.server + "/*code=*"],
   };
 
   webRequest.onBeforeRequest(filter, async ({ url }) => {

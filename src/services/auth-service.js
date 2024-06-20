@@ -47,7 +47,7 @@ async function getAuthenticationURL(d) {
       client_id = responseBody.clientId;
       state = responseBody.state;
 
-      resolve(responseBody.codeUrl);
+      resolve(responseBody);
     });
   });
 }
