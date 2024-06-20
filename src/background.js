@@ -211,7 +211,10 @@ async function createAuthWindow(login) {
     let codeUrl;
     await authService.getAuthenticationURL(device).then((rsp) => {
       console.log("rsp.codeUrl = ", rsp.codeUrl);
-      codeUrl = rsp.codeUrl + '&client_id=' + rsp.clientId;
+      codeUrl = rsp.codeUrl;
+      if (!codeUrl.includes("client_id")) {
+        codeUrl = codeUrl + "&client_id=" + rsp.clientId;
+      }
     });
     console.log("codeUrl = ", codeUrl);
     authWindow.loadURL(codeUrl);
