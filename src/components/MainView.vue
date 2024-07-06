@@ -713,7 +713,15 @@ export default {
     this.nets = config.config;
 
     try {
-      this.device = config.device;
+      this.device = {};
+      this.device.server = "https://my.nettica.com";
+      this.device.sourceAddress = "0.0.0.0";
+      this.device.quiet = true;
+      this.device.checkInterval = 10;
+      this.device.id = "";
+      this.device.name = os.hostname();
+      this.device.os = os.platform();
+      this.device.arch = os.arch();
     } catch (e) {
       console.error("nettica.conf does not exist: ", e.toString());
 
@@ -723,11 +731,11 @@ export default {
       this.device.quiet = true;
       this.device.checkInterval = 10;
       this.device.id = "";
+      this.device.name = os.hostname();
+      this.device.os = os.platform();
+      this.device.arch = os.arch();
     }
 
-    this.device.name = os.hostname();
-    this.device.os = os.platform();
-    this.device.arch = os.arch();
     console.log("device = ", this.device);
 
     autoLauncher.isEnabled().then((isEnabled) => {
