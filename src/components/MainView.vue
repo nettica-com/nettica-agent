@@ -1106,6 +1106,11 @@ export default {
     },
     addServer() {
       console.log("Add Server");
+      if (this.servers.length == 0) {
+        this.server = "https://my.nettica.com";
+      } else {
+        this.server = "";
+      }
       this.dialogServer = true;
     },
     createServer() {

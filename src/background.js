@@ -415,51 +415,35 @@ function startWatcher(path) {
       if (path.endsWith(".json")) {
         let server_name = path.split("/").pop();
         server_name = server_name.trimEnd(".json");
-        let index = servers.findIndex(
-          servers,
-          (s) => s.device.server == "https://" + server_name
-        );
-        if (index !== -1) {
-          // Remove the existing server
-          servers.splice(index, 1);
-        } else {
-          index = servers.findIndex(
-            servers,
-            (s) => s.device.server == "http://" + server_name
-          );
-          if (index !== -1) {
-            // Remove the existing server
-            servers.splice(index, 1);
+        for (let i = 0; i < servers.length; i++) {
+          if (
+            servers[i].device.server == "https://" + server_name ||
+            servers[i].device.server == "http://" + server_name
+          ) {
+            servers.splice(i, 1);
+            break;
           }
         }
+        mainWindow.webContents.send("handle-servers", servers);
+        console.log("File", path, "has been removed");
       }
-      mainWindow.webContents.send("handle-servers", servers);
-      console.log("File", path, "has been removed");
     })
     .on("unlink", function (path) {
-      console.log("File", path, "has been removed");
       if (path.endsWith(".json")) {
         let server_name = path.split("/").pop();
         server_name = server_name.trimEnd(".json");
-        let index = servers.findIndex(
-          servers,
-          (s) => s.device.server == "https://" + server_name
-        );
-        if (index !== -1) {
-          // Remove the existing server
-          this.servers.splice(index, 1);
-        } else {
-          index = servers.findIndex(
-            servers,
-            (s) => s.device.server == "http://" + server_name
-          );
-          if (index !== -1) {
-            // Remove the existing server
-            this.servers.splice(index, 1);
+        for (let i = 0; i < servers.length; i++) {
+          if (
+            servers[i].device.server == "https://" + server_name ||
+            servers[i].device.server == "http://" + server_name
+          ) {
+            servers.splice(i, 1);
+            break;
           }
         }
+        mainWindow.webContents.send("handle-servers", servers);
+        console.log("File", path, "has been removed");
       }
-      mainWindow.webContents.send("handle-servers", servers);
     })
     .on("unlinkDir", function (path) {
       console.log("Directory", path, "has been removed");
