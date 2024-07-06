@@ -11,7 +11,7 @@ function createAuthWindow() {
     width: 600,
     height: 1000,
     webPreferences: {
-      nodeIntegration: false,
+      nodeIntegration: true,
     },
   });
 

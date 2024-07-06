@@ -7,22 +7,22 @@ let accessToken = null;
 
 let client_id = null;
 let state = null;
-let device = null;
+let server = null;
 
 function getAccessToken() {
   return accessToken;
 }
 
-async function getAuthenticationURL(d) {
+async function getAuthenticationURL(s) {
   // make a http get request to {server}/api/v1.0/auth/oauth2_url
   // the response will be the url to redirect to for oauth2 authentication
   // the response will be in the form of a json object
 
   return new Promise((resolve, reject) => {
-    device = d;
+    server = s;
 
     const authUrl =
-      device.server +
+      server +
       "/api/v1.0/auth/oauth2_url?redirect_uri=com.nettica.agent://callback/agent";
 
     console.log("authUrl = ", authUrl);
@@ -45,6 +45,7 @@ async function getAuthenticationURL(d) {
       console.log("responseBody = ", responseBody);
 
       client_id = responseBody.clientId;
+      console.log("*** client_id = ", client_id);
       state = responseBody.state;
 
       resolve(responseBody);
@@ -69,7 +70,7 @@ function loadNetticaTokens(callbackURL) {
 
     const options = {
       method: "POST",
-      url: `${device.server}/api/v1.0/auth/oauth2_exchange`,
+      url: `${server}/api/v1.0/auth/oauth2_exchange`,
       headers: {
         "content-type": "application/json",
       },

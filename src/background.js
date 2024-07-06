@@ -14,31 +14,49 @@ import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 import authService from "./services/auth-service";
 import windowStateKeeper from "electron-window-state";
 
-import fs from "fs";
+const fs = require("fs");
 const path = require("path");
 const fileWatcher = require("chokidar");
-const env = require("../env");
 const os = require("os");
 const { Notification } = require("electron");
+const { autoUpdater } = require("electron-updater");
 
 var icon = path.join(__static, "./nettica.png");
 
-var { appData } = env;
+var appData;
 if (process.env.ALLUSERSPROFILE != null) {
   appData = process.env.ALLUSERSPROFILE;
 }
 
-let NetticaConfigPath = appData + "\\nettica\\nettica.json";
-let NetticaClientPath = appData + "\\nettica\\nettica.conf";
+let NetticaServersPath = appData + "\\nettica\\";
 
 if (os.platform() == "linux") {
-  NetticaConfigPath = "/etc/nettica/nettica.json";
-  NetticaClientPath = "/etc/nettica/nettica.conf";
+  NetticaServersPath = "/etc/nettica/";
 }
 
 if (os.platform() == "darwin") {
-  NetticaConfigPath = "/usr/local/etc/nettica/nettica.json";
-  NetticaClientPath = "/usr/local/etc/nettica/nettica.conf";
+  NetticaServersPath = "/usr/local/etc/nettica/";
+}
+
+var servers = [];
+
+function getServers() {
+  // Read all the json files in the directory
+  const files = fs.readdirSync(NetticaServersPath);
+  files.forEach((file) => {
+    console.log("file = ", file);
+    if (file.endsWith(".json") && file != "nettica.json") {
+      try {
+        console.log("server file = ", NetticaServersPath + file);
+        let server = JSON.parse(fs.readFileSync(NetticaServersPath + file));
+        servers.push(server);
+      } catch (err) {
+        console.error("Error reading json file: ", err);
+      }
+    }
+  });
+
+  return servers;
 }
 
 //Unicast Client receiving notification messages
@@ -86,9 +104,11 @@ uclient.on("error", (err) => {
 
 uclient.bind(PORT, UCAST_ADDR);
 
+let server;
 // handle messages from renderer
 ipcMain.on("authenticate", (event, arg) => {
   console.log(arg);
+  server = arg;
   try {
     createAuthWindow(true);
   } catch (err) {
@@ -103,6 +123,12 @@ ipcMain.on("accessToken", (event) => {
   console.log("accessToken = ", authService.getAccessToken());
 });
 
+if (os.platform == "win32") {
+  ipcMain.on("update-now", () => {
+    autoUpdater.quitAndInstall();
+  });
+}
+
 ipcMain.handle("logout", (event) => {
   console.log("*** logout received ***");
   const win = new BrowserWindow({
@@ -112,7 +138,7 @@ ipcMain.handle("logout", (event) => {
   });
 
   win.loadURL(
-    device.server +
+    server +
       "/api/v1.0/auth/logout?redirect_url=com.nettica.agent://callback/agent"
   );
   win.on("ready-to-show", () => {
@@ -157,38 +183,17 @@ let mainWindow;
 
 async function createWindow() {
   try {
-    getConfig();
     createAppWindow();
   } catch (err) {
     console.error("Error creating App Window : ", err);
   }
 }
 
-let config;
-function getConfig() {
-  try {
-    config = JSON.parse(fs.readFileSync(NetticaConfigPath));
-  } catch (err) {
-    config = {};
-  }
-}
-
-let device;
-function getDevice() {
-  try {
-    device = JSON.parse(fs.readFileSync(NetticaClientPath));
-  } catch (err) {
-    device = {};
-    device.server = "https://my.nettica.com";
-  }
-  return device;
-}
-
 let authWindow;
 
 async function createAuthWindow(login) {
   destroyAuthWin();
-  getDevice();
+
   // Create the browser window.
   authWindow = new BrowserWindow({
     width: 600,
@@ -196,7 +201,7 @@ async function createAuthWindow(login) {
     autoHideMenuBar: true,
     icon: icon,
     webPreferences: {
-      nodeIntegration: false,
+      nodeIntegration: true,
     },
   });
   authWindow.setTitle("Authentication");
@@ -204,12 +209,12 @@ async function createAuthWindow(login) {
 
   if (!login) {
     authWindow.loadURL(
-      device.server +
+      server +
         "/api/v1.0/auth/logout?redirect_uri=com.nettica.agent://callback/agent"
     );
   } else {
     let codeUrl;
-    await authService.getAuthenticationURL(device).then((rsp) => {
+    await authService.getAuthenticationURL(server).then((rsp) => {
       console.log("rsp.codeUrl = ", rsp.codeUrl);
       codeUrl = rsp.codeUrl;
       if (!codeUrl.includes("client_id")) {
@@ -226,7 +231,7 @@ async function createAuthWindow(login) {
 
   const filter = {
     //    urls: ["com.nettica.agent://callback/agent*", "https://dev.nettica.com/*"],
-    urls: ["com.nettica.agent://callback/agent*", device.server + "/*code=*"],
+    urls: ["com.nettica.agent://callback/agent*", server + "/*code=*"],
   };
 
   webRequest.onBeforeRequest(filter, async ({ url }) => {
@@ -249,6 +254,10 @@ async function createAuthWindow(login) {
 }
 
 function destroyAuthWin() {
+  let accessToken = authService.getAccessToken();
+  if (accessToken) {
+    mainWindow.webContents.send("authenticated", accessToken);
+  }
   if (!authWindow) return;
   authWindow.close();
   authWindow = null;
@@ -304,9 +313,15 @@ function createAppWindow() {
 
   mainWindow.on("ready-to-show", function () {
     mainWindow.setTitle("Nettica Agent");
+    mainWindow.webContents.send("handle-servers", servers);
+
     mainWindow.show();
     console.log("ready-to-show");
   });
+
+  if (os.platform == "win32") {
+    autoUpdater.checkForUpdatesAndNotify();
+  }
 
   mainWindow.on("minimize", function (event) {
     if (process.platform != "linux") {
@@ -345,6 +360,7 @@ function createAppWindow() {
 function startWatcher(path) {
   var watcher = fileWatcher.watch(path, {
     persistent: true,
+    ignoreInitial: true,
   });
 
   function onWatcherReady() {
@@ -357,72 +373,93 @@ function startWatcher(path) {
   watcher
     .on("add", function (path) {
       // check if the file is nettica.json
-      if (path.includes("nettica.json")) {
-        getConfig();
-        console.log("Add - Config = ", config);
-        try {
-          mainWindow.webContents.send("handle-config", config.config);
-          mainWindow.webContents.send("handle-device", config.device);
-        } catch (e) {
-          console.error("send config to renderer:", e.toString());
-        }
-      }
-      if (path.includes("nettica.conf")) {
-        getDevice();
-        console.log("Add - Device = ", device);
-        try {
-          mainWindow.webContents.send("handle-device", device);
-        } catch (e) {
-          console.error("send device to renderer:", e.toString());
-        }
-      }
       console.log("File", path, "has been added");
+      if (path.endsWith(".json")) {
+        try {
+          let server = JSON.parse(fs.readFileSync(path));
+          servers.push(server);
+          mainWindow.webContents.send("handle-servers", servers);
+        } catch (err) {
+          console.error("Error reading json file: ", err);
+        }
+      }
     })
     .on("addDir", function (path) {
       console.log("Directory", path, "has been added");
     })
     .on("change", function (path) {
-      if (path.includes("nettica.json")) {
-        getConfig();
-        console.log("Change - Config = ", config);
+      if (path.endsWith(".json")) {
+        console.log("File", path, "has been changed");
         try {
-          mainWindow.webContents.send("handle-config", config.config);
-        } catch (e) {
-          console.error("send config to renderer:", e.toString());
+          let body = fs.readFileSync(path);
+          let s = JSON.parse(body);
+          let found = false;
+          for (let i = 0; i < servers.length; i++) {
+            if (servers[i].device.server == s.device.server) {
+              servers[i] = s;
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            // Add new server
+            servers.push(s);
+          }
+          mainWindow.webContents.send("handle-servers", servers);
+        } catch (err) {
+          console.error("Error reading json file: ", err);
         }
       }
-      if (path.includes("nettica.conf")) {
-        getDevice();
-        console.log("Change - Device = ", device);
-        try {
-          mainWindow.webContents.send("handle-device", device);
-        } catch (e) {
-          console.error("send device to renderer:", e.toString());
+    })
+    .on("remove", function (path) {
+      if (path.endsWith(".json")) {
+        let server_name = path.split("/").pop();
+        server_name = server_name.trimEnd(".json");
+        let index = servers.findIndex(
+          servers,
+          (s) => s.device.server == "https://" + server_name
+        );
+        if (index !== -1) {
+          // Remove the existing server
+          servers.splice(index, 1);
+        } else {
+          index = servers.findIndex(
+            servers,
+            (s) => s.device.server == "http://" + server_name
+          );
+          if (index !== -1) {
+            // Remove the existing server
+            servers.splice(index, 1);
+          }
         }
       }
-
-      console.log("File", path, "has been changed");
+      mainWindow.webContents.send("handle-servers", servers);
+      console.log("File", path, "has been removed");
     })
     .on("unlink", function (path) {
-      // check if the file is nettica.json
-      if (path.includes("nettica.json")) {
-        var delconfig = [];
-        try {
-          mainWindow.webContents.send("handle-config", delconfig);
-        } catch (e) {
-          console.error("send config to renderer:", e.toString());
-        }
-      }
-      if (path.includes("nettica.conf")) {
-        getDevice();
-        try {
-          mainWindow.webContents.send("handle-device", device);
-        } catch (e) {
-          console.error("send device to renderer:", e.toString());
-        }
-      }
-
       console.log("File", path, "has been removed");
+      if (path.endsWith(".json")) {
+        let server_name = path.split("/").pop();
+        server_name = server_name.trimEnd(".json");
+        let index = servers.findIndex(
+          servers,
+          (s) => s.device.server == "https://" + server_name
+        );
+        if (index !== -1) {
+          // Remove the existing server
+          this.servers.splice(index, 1);
+        } else {
+          index = servers.findIndex(
+            servers,
+            (s) => s.device.server == "http://" + server_name
+          );
+          if (index !== -1) {
+            // Remove the existing server
+            this.servers.splice(index, 1);
+          }
+        }
+      }
+      mainWindow.webContents.send("handle-servers", servers);
     })
     .on("unlinkDir", function (path) {
       console.log("Directory", path, "has been removed");
@@ -430,11 +467,7 @@ function startWatcher(path) {
     .on("error", function (error) {
       console.log("Error happened", error);
     })
-    .on("ready", onWatcherReady)
-    .on("raw", function (event, path, details) {
-      // This event should be triggered everytime something happens.
-      console.log("Raw event info:", event, path, details);
-    });
+    .on("ready", onWatcherReady);
 }
 
 // Quit when all windows are closed.
@@ -456,8 +489,8 @@ app.on("activate", () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on("ready", async () => {
-  getConfig();
-  getDevice();
+  getServers();
+
   if (isDevelopment && !process.env.IS_TEST) {
     // Install Vue Devtools
     try {
@@ -465,6 +498,16 @@ app.on("ready", async () => {
     } catch (e) {
       console.error("Vue Devtools failed to install:", e.toString());
     }
+  }
+
+  if (os.platform == "win32") {
+    autoUpdater.on("update-available", () => {
+      mainWindow.webContents.send("update-available");
+    });
+
+    autoUpdater.on("update-downloaded", () => {
+      mainWindow.webContents.send("update-downloaded");
+    });
   }
 
   let i = nativeImage.createFromPath(icon);
@@ -502,8 +545,7 @@ app.on("ready", async () => {
 
   createWindow();
 
-  startWatcher(NetticaConfigPath);
-  startWatcher(NetticaClientPath);
+  startWatcher(NetticaServersPath);
 });
 
 // Exit cleanly on request from parent process in development mode.
@@ -522,7 +564,5 @@ if (isDevelopment) {
 }
 
 export default {
-  getConfig,
-  getDevice,
-  device,
+  getServers,
 };

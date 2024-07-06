@@ -3,7 +3,13 @@ module.exports = defineConfig({
   transpileDependencies: ["vuetify"],
   pluginOptions: {
     electronBuilder: {
-      externals: ["vue-d3-network", "chokidar", "apexcharts", "auto-launch"],
+      externals: [
+        "vue-d3-network",
+        "chokidar",
+        "apexcharts",
+        "auto-launch",
+        "commonjs fs",
+      ],
       builderOptions: {
         productName: "Nettica Agent",
         files: ["**/*"],

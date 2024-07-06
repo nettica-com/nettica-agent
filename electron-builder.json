@@ -3,8 +3,14 @@
     "appId": "com.nettica.agent",
     "productName": "Nettica Agent",
     "icon": "build/icon.icns",
-    
 
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://nettica.com/downloads"
+      }
+    ],
+    
   "mac": {
     "icon": "build/icon.icns",
     "category": "public.app-category.utilities"
@@ -26,7 +32,12 @@
 
   "win": {
     "icon": "build/icon.ico",
-    "appId": "com.nettica.agent"
+    "appId": "com.nettica.agent",
+    "sign": "sign.js",
+    "certificateSubjectName": "Nettica Corporation",
+    "rfc3161TimeStampServer": "http://ts.ssl.com",
+    "timeStampServer": "http://ts.ssl.com"
+
   },
   "nsis": {
     "oneClick": true,

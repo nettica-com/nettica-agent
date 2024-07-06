@@ -13,166 +13,187 @@
             <span class="navbar-brand">nettica agent</span>
           </span>
           <v-spacer />
-          <span>
-            <button
-              class="btn btn-primary my-2 my-sm-0"
-              icon
-              @click="startSettings()"
-            >
-              <v-icon title="Settings" dark> mdi-cog-outline </v-icon>
-              Settings
-            </button>
-            &nbsp;
-            <button
-              :disabled="addNetDisabled"
-              @click="startCreate()"
-              class="btn btn-primary my-2 my-sm-0"
-            >
-              <img
-                :src="require('../assets/hub.svg')"
-                height="24"
-                alt="nettica"
-              />
-              Join Network
-            </button>
-            &nbsp;
-            <button class="btn btn-danger" @click="login()" type="button">
-              <v-icon title="Authentication" dark> mdi-lock </v-icon>
-              {{ loginText }}
-            </button>
-            &nbsp;
-          </span>
+          <button
+            class="btn btn-primary my-2 my-sm-0 mr-3"
+            icon
+            @click="addServer()"
+          >
+            <v-icon title="Add Server" dark> mdi-plus </v-icon>
+          </button>
         </nav>
       </header>
     </div>
-    <div class="row">
-      <v-expansion-panels dark>
-        <v-expansion-panel
-          @click="loadNetwork"
-          v-for="(net, i) in nets"
-          :key="i"
+    <div
+      v-for="(item, index) in servers"
+      :key="`server-${index}`"
+      class="pt-3 pb-3"
+    >
+      <div style="display: flex; align-items: center; flex-wrap: nowrap">
+        <v-label
+          :key="index"
+          class="pt-5 pb-5 pr-5 pl-5"
+          style="font-size: 18px; font-family: Roboto"
+          v-model="item.name"
+          >{{ item.name }}</v-label
         >
-          <v-expansion-panel-header>
-            <v-btn
-              class="px-0 mx-0"
-              max-width="50px"
-              color="red"
-              icon
-              flex="0"
-              shrink="0"
-              @click="deleteVPN(net)"
-              :disabled="net.enable"
-              title="Delete Network"
-            >
-              <v-icon dark width="30px" style="width: 30px">
-                mdi-delete-outline
-              </v-icon>
-            </v-btn>
-            <v-switch
-              dark
-              class="px-0"
-              color="success"
-              v-model="net.enable"
-              v-on:change="EnableVPN(net)"
-            />
-            {{ net.netName }}
-            <v-spacer />
-          </v-expansion-panel-header>
-          <v-expansion-panel-content>
-            <table class="vpntable">
-              <th>ssh</th>
-              <th>rdp</th>
-              <th>name</th>
-              <th class="hidden-xs-only">address</th>
-              <tr v-for="(vpn, x) in net.vpns" :key="x">
-                <td>
-                  <v-btn
-                    class="mx-2"
-                    icon
-                    @click="launchSSH(net, vpn)"
-                    title="SSH"
-                    :disabled="!vpn.current.hasSSH"
-                  >
-                    <v-icon dark> mdi-lan-connect </v-icon>
-                  </v-btn>
-                </td>
-                <td>
-                  <v-btn
-                    class="mx-2"
-                    icon
-                    @click="launchRDP(net, vpn)"
-                    title="Remote Desktop"
-                    :disabled="!vpn.current.hasRDP"
-                  >
-                    <v-icon dark> mdi-remote-desktop </v-icon>
-                  </v-btn>
-                </td>
-                <td>
-                  {{ vpn.name }}
-                </td>
-                <td class="hidden-xs-only">
-                  {{ vpn.current.address[0] }}
-                </td>
-              </tr>
-            </table>
-          </v-expansion-panel-content>
-        </v-expansion-panel>
-      </v-expansion-panels>
+        <div style="flex-grow: 1; margin-left: auto"></div>
+        <button
+          class="btn btn-primary my-2 my-sm-0"
+          icon
+          @click="startSettings(item)"
+        >
+          <v-icon title="Settings" dark> mdi-cog-outline </v-icon>
+        </button>
+        &nbsp;
+        <button
+          :disabled="addNetDisabled"
+          @click="startCreate(item)"
+          class="btn btn-primary my-2 my-sm-0"
+        >
+          <img
+            title="Join Network"
+            :src="require('../assets/hub.svg')"
+            height="24"
+            alt="nettica"
+          />
+        </button>
+        &nbsp;
+        <button :class="item.class" @click="login(item)" type="button">
+          <v-icon :title="loginText" dark> mdi-lock </v-icon>
+        </button>
+        &nbsp;&nbsp;
+      </div>
+      <div class="row">
+        <v-expansion-panels dark>
+          <v-expansion-panel
+            @click="loadNetwork(item.config[i])"
+            v-for="(net, i) in item.config"
+            :key="i"
+          >
+            <v-expansion-panel-header>
+              <v-btn
+                class="px-0 mx-0"
+                max-width="50px"
+                color="red"
+                icon
+                flex="0"
+                shrink="0"
+                @click="deleteVPN(item, item.config[i])"
+                :disabled="net.enable"
+                title="Delete Network"
+              >
+                <v-icon dark width="30px" style="width: 30px">
+                  mdi-delete-outline
+                </v-icon>
+              </v-btn>
+              <v-switch
+                dark
+                class="px-0"
+                color="success"
+                v-model="net.enable"
+                v-on:change="EnableVPN(item, net)"
+              />
+              {{ net.netName }}
+              <v-spacer />
+            </v-expansion-panel-header>
+            <v-expansion-panel-content>
+              <table class="vpntable">
+                <th>ssh</th>
+                <th>rdp</th>
+                <th>name</th>
+                <th class="hidden-xs-only">address</th>
+                <tr v-for="(vpn, x) in net.vpns" :key="x">
+                  <td>
+                    <v-btn
+                      class="mx-2"
+                      icon
+                      @click="launchSSH(net, vpn)"
+                      title="SSH"
+                      :disabled="!vpn.current.hasSSH"
+                    >
+                      <v-icon dark> mdi-lan-connect </v-icon>
+                    </v-btn>
+                  </td>
+                  <td>
+                    <v-btn
+                      class="mx-2"
+                      icon
+                      @click="launchRDP(net, vpn)"
+                      title="Remote Desktop"
+                      :disabled="!vpn.current.hasRDP"
+                    >
+                      <v-icon dark> mdi-remote-desktop </v-icon>
+                    </v-btn>
+                  </td>
+                  <td>
+                    {{ vpn.name }}
+                  </td>
+                  <td class="hidden-xs-only">
+                    {{ vpn.current.address[0] }}
+                  </td>
+                </tr>
+              </table>
+            </v-expansion-panel-content>
+          </v-expansion-panel>
+        </v-expansion-panels>
+      </div>
     </div>
     <h4 style="text-align: center">{{ netName }}</h4>
-    <v-row id="exp" dense>
-      <v-col cols="4" class="ml-4">
-        <div class="chart-wrapper" v-show="showChart">
-          <apexChart
-            v-show="showChart"
-            ref="chart1"
-            id="chart1"
-            dark
-            type="line"
-            :width="330"
-            :height="280"
-            :options="goptions"
-            :series="series"
-          ></apexChart>
-        </div>
-      </v-col>
-      <v-col col="5" class="mx-0">
-        <d3-network
-          class="network"
-          :height="300"
-          :net-nodes="nodes"
-          :net-links="links"
-          :options="options"
-        />
-      </v-col>
-      <v-col cols="3" class="mx-4">
-        <div>
-          <b v-show="showDns" class="mb-0">DNS&nbsp;Queries</b>
-          <div
-            id="canvas"
-            v-show="showDns"
-            style="
-              border: 1px solid #000000;
-              border-radius: 10px;
-              background: #444;
-              width: 350px;
-              min-width: 200px;
-              height: 276px;
-              overflow-y: auto;
-              margin-bottom: 10px;
-            "
-          >
+    <div style="display: flex; align-items: center; flex-wrap: wrap">
+      <v-row id="exp" dense>
+        <v-col cols="4" class="ml-4">
+          <div class="chart-wrapper" v-show="showChart">
+            <apexChart
+              v-show="showChart"
+              ref="chart1"
+              id="chart1"
+              dark
+              type="line"
+              :width="330"
+              :height="280"
+              :options="goptions"
+              :series="series"
+            ></apexChart>
+          </div>
+        </v-col>
+        <v-col col="5" class="mx-0">
+          <d3-network
+            class="network"
+            :height="300"
+            :net-nodes="nodes"
+            :net-links="links"
+            :options="options"
+          />
+        </v-col>
+        <v-col cols="3" class="mx-4">
+          <div>
+            <b v-show="showDns" class="mb-0">DNS&nbsp;Queries</b>
             <div
-              v-for="(query, index) in queries"
-              :key="index"
-              style="font-size: 12px; padding-left: 5px"
+              id="canvas"
+              v-show="showDns"
+              style="
+                border: 1px solid #000000;
+                border-radius: 10px;
+                background: #444;
+                width: 350px;
+                min-width: 200px;
+                height: 276px;
+                overflow-y: auto;
+                margin-bottom: 10px;
+              "
             >
-              {{ query }}
+              <div
+                v-for="(query, index) in queries"
+                :key="index"
+                style="font-size: 12px; padding-left: 5px"
+              >
+                {{ query }}
+              </div>
             </div>
           </div>
-        </div>
-      </v-col>
-    </v-row>
+        </v-col>
+      </v-row>
+    </div>
     <v-dialog v-model="dialogCreate" max-width="550">
       <v-card>
         <v-card-title class="headline">Join Network</v-card-title>
@@ -262,6 +283,38 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="dialogServer" max-width="550">
+      <v-card>
+        <v-card-title class="headline">Add Server</v-card-title>
+        <v-card-text>
+          <v-row>
+            <v-col cols="12">
+              <v-form ref="form" v-model="valid">
+                <v-text-field
+                  v-model="server"
+                  label="Server"
+                  :rules="[(v) => !!v || 'Server is required']"
+                  single
+                  persistent-hint
+                  required
+                />
+              </v-form>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn :disabled="!valid" color="success" @click="createServer()">
+            Submit
+            <v-icon right dark>mdi-check-outline</v-icon>
+          </v-btn>
+          <v-btn color="primary" @click="dialogServer = false">
+            Cancel
+            <v-icon right dark>mdi-close-circle-outline</v-icon>
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <v-dialog v-model="dialogSettings" max-width="550">
       <v-card>
         <v-card-title class="headline">Settings</v-card-title>
@@ -275,54 +328,46 @@
                   :rules="[(v) => !!v || 'friendly name is required']"
                   required
                 />
-                <v-text-field v-model="device.ezcode" label="EZ-Code" />
+                <v-text-field
+                  v-if="!device.registered"
+                  v-model="device.ezcode"
+                  label="EZ-Code"
+                />
+                <v-text-field
+                  v-model="device.server"
+                  readonly
+                  label="Server"
+                  required
+                />
+                <v-text-field v-model="device.id" label="Device ID" />
+                <v-text-field v-model="device.apiKey" label="Api Key" />
+                <v-text-field v-model="device.instanceid" label="Instance ID" />
                 <v-switch
                   v-model="autoLaunch"
                   label="Launch at start-up"
                   @click="setAutoLaunch()"
                 />
-                <v-expansion-panels>
-                  <v-expansion-panel>
-                    <v-expansion-panel-header
-                      dark
-                      style="padding: 12px 0px 12px 0px"
-                      >Advanced Configuration</v-expansion-panel-header
-                    >
-                    <v-expansion-panel-content>
-                      <v-col cols="12" style="padding: 12px 0px 12px 0px">
-                        <v-text-field
-                          v-model="device.server"
-                          label="Server"
-                          :rules="[
-                            (v) =>
-                              !!v ||
-                              'server is required, eg. https://my.nettica.com/',
-                          ]"
-                          required
-                        />
-                        <v-text-field v-model="device.id" label="Device ID" />
-                        <v-text-field v-model="device.apiKey" label="Api Key" />
-                        <v-text-field
-                          v-model="device.instanceid"
-                          label="Instance ID"
-                        />
-                      </v-col>
-                    </v-expansion-panel-content>
-                  </v-expansion-panel>
-                </v-expansion-panels>
               </v-form>
             </v-col>
           </v-row>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn :disabled="!valid" color="success" @click="saveSettings()">
+          <v-btn
+            :disabled="!valid"
+            color="success"
+            @click="saveSettings(device)"
+          >
             Submit
             <v-icon right dark>mdi-check-outline</v-icon>
           </v-btn>
           <v-btn color="primary" @click="dialogSettings = false">
             Cancel
             <v-icon right dark>mdi-close-circle-outline</v-icon>
+          </v-btn>
+          <v-btn color="red" @click="deleteSettings()">
+            Delete
+            <v-icon right dark>mdi-delete-outline</v-icon>
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -365,13 +410,12 @@ const D3Network = window.require("vue-d3-network");
 const ipcRenderer = window.require("electron").ipcRenderer;
 const spawn = window.require("child_process").spawn;
 const execSync = window.require("child_process").execSync;
-const env = require("../../env");
 const pack = require("../../package");
 const ApexCharts = window.require("apexcharts");
 const os = window.require("os");
 const AutoLaunch = window.require("auto-launch");
 
-var { appData } = env;
+var appData = "C:\\ProgramData";
 var { version } = pack;
 
 if (process.env.ALLUSERSPROFILE != null) {
@@ -379,19 +423,16 @@ if (process.env.ALLUSERSPROFILE != null) {
 }
 
 let xPath = null;
-let NetticaConfigPath = appData + "\\nettica\\nettica.json";
-let NetticaClientPath = appData + "\\nettica\\nettica.conf";
+let NetticaServersPath = appData + "\\nettica\\";
 
 if (os.platform() == "linux") {
   xPath = `/opt/Nettica\\ Agent/nettica.agent`; // have to fix it up because of the space in the path
-  NetticaConfigPath = "/etc/nettica/nettica.json";
-  NetticaClientPath = "/etc/nettica/nettica.conf";
+  NetticaServersPath = "/etc/nettica/";
 }
 
 if (os.platform() == "darwin") {
   xPath = null;
-  NetticaConfigPath = "/usr/local/etc/nettica/nettica.json";
-  NetticaClientPath = "/usr/local/etc/nettica/nettica.conf";
+  NetticaServersPath = "/usr/local/etc/nettica/";
 }
 
 // setup autoLaunch
@@ -405,13 +446,6 @@ ipcRenderer.on("handle-config", (e, arg) => {
   // document window
   Nets = arg;
   console.log("Nets updated: ", Nets);
-});
-
-let Device;
-ipcRenderer.on("handle-device", (e, arg) => {
-  // document window
-  Device = arg;
-  console.log("Device updated: ", Device);
 });
 
 let Queries = [];
@@ -445,6 +479,12 @@ export default {
       server: "https://my.nettica.com",
       appData: appData,
       name: os.hostname(),
+      ezcode: "",
+      id: "",
+      apiKey: "",
+      instanceid: "",
+      os: os.platform(),
+      arch: os.arch(),
     },
     queries: [],
     nets: [],
@@ -476,9 +516,12 @@ export default {
     dialogCreate: false,
     dialogSettings: false,
     dialogAbout: false,
+    dialogServer: false,
     version: version,
     autoLaunch: false,
     server: "",
+    servers: [],
+    savedItem: null,
     deviceId: "",
     deviceName: os.hostname(),
     apiKey: "",
@@ -596,6 +639,60 @@ export default {
     },
   },
   created() {
+    ipcRenderer.on("handle-servers", (event, args) => {
+      var oldServers = this.servers;
+      console.log("oldServers = ", oldServers);
+      this.servers = args;
+
+      /*      for (let i = 0; i < args.length; i++) {
+        for (let j = 0; j < this.servers.length; j++) {
+          if (this.servers[j].device.server == args[i].device.server) {
+            args[i].accessToken = this.servers[j].accessToken;
+            args[i].class = this.servers[j].class;
+            args[i].config = this.servers[j].config;
+            args[i].device = this.servers[j].device;
+            args[i].name = this.servers[j].name;
+          }
+        }
+      }
+      this.servers = args;
+      console.log("servers = ", this.servers);*/
+      // find the local host in a net and set the enable flag on the net
+      for (let x = 0; x < this.servers.length; x++) {
+        this.servers[x].name = this.servers[x].device.server.replace(
+          "https://",
+          ""
+        );
+        this.servers[x].class = "btn btn-danger";
+        for (let i = 0; i < this.servers[x].config.length; i++) {
+          for (let j = 0; j < this.servers[x].config[i].vpns.length; j++) {
+            if (
+              this.servers[x].config[i].vpns[j].deviceid ==
+              this.servers[x].device.id
+            ) {
+              this.servers[x].config[i].enable =
+                this.servers[x].config[i].vpns[j].enable;
+            }
+          }
+        }
+      }
+    });
+    ipcRenderer.on("authenticated", (event, args) => {
+      console.log("on authenticated", args);
+      this.savedItem.accessToken = args;
+      this.savedItem.class = "btn btn-success";
+    });
+    ipcRenderer.on("update-available", (event, args) => {
+      console.log("update-available", args);
+      if (confirm("An update is available. Do you want to install it now?")) {
+        ipcRenderer.send("install-now");
+      }
+    });
+    ipcRenderer.on("update-downloaded", (event, args) => {
+      console.log("update-downloaded", args);
+      alert("An update has been downloaded. Click to install.");
+      ipcRenderer.send("install-now");
+    });
     this.$vuetify.theme.dark = true;
     let config = {};
     config.config = [];
@@ -605,16 +702,18 @@ export default {
       this.goptions
     );
     try {
-      config = JSON.parse(fs.readFileSync(NetticaConfigPath));
+      config = JSON.parse(
+        fs.readFileSync(NetticaServersPath + "my.nettica.com.json")
+      );
     } catch (e) {
-      console.error("nettica.json does not exist: ", e.toString());
+      console.error("my.nettica.com.json does not exist: ", e.toString());
     }
 
     console.log("Config = ", config);
     this.nets = config.config;
 
     try {
-      this.device = JSON.parse(fs.readFileSync(NetticaClientPath));
+      this.device = config.device;
     } catch (e) {
       console.error("nettica.conf does not exist: ", e.toString());
 
@@ -626,21 +725,10 @@ export default {
       this.device.id = "";
     }
 
-    this.device.appData = appData;
     this.device.name = os.hostname();
     this.device.os = os.platform();
     this.device.arch = os.arch();
-    console.log("Device = ", this.device);
-    // find the local host in a net and set the enable flag on the net
-    if (this.nets != null) {
-      for (let i = 0; i < this.nets.length; i++) {
-        for (let j = 0; j < this.nets[i].vpns.length; j++) {
-          if (this.nets[i].vpns[j].deviceid == this.device.id) {
-            this.nets[i].enable = this.nets[i].vpns[j].enable;
-          }
-        }
-      }
-    }
+    console.log("device = ", this.device);
 
     autoLauncher.isEnabled().then((isEnabled) => {
       this.autoLaunch = isEnabled;
@@ -662,10 +750,10 @@ export default {
 
         this.oneHour = 0;
       }
-      this.loadDevice();
       this.loadNets();
       this.loadQueries();
       if (this.net != null) {
+        console.log("getMetrics", this.net.netName);
         this.getMetrics(this, this.net.netName);
       }
     }, 5000);
@@ -674,39 +762,33 @@ export default {
     this.dialogAbout = true;
   },
   methods: {
-    async logout() {
+    async logout(item) {
       this.loginText = "Login";
 
-      this.callLogout();
+      this.callLogout(item.device.server);
       console.log("logout - after callLogout");
       alert("You have been logged out");
     },
-    async login() {
-      if (this.loginText == "Login") {
-        ipcRenderer.sendSync("authenticate");
-        this.loginText = "Logout";
-        this.logged_in = true;
+    async login(item) {
+      if (item.accessToken == null) {
+        try {
+          this.savedItem = item;
+          await ipcRenderer.sendSync("authenticate", item.device.server);
+          item.class = "btn btn-success";
+          this.loginText = "Logout";
+          this.logged_in = true;
+          this.$forceUpdate();
+        } catch (e) {
+          console.log("login - error = ", e);
+        }
       } else {
+        item.accessToken = null;
+        item.class = "btn btn-danger";
+        console.log("logout - accessToken = ", item.accessToken);
         this.loginText = "Login";
         this.logged_in = false;
-        await this.logout();
-      }
-    },
-    loadDevice() {
-      if (Device) {
-        console.log("loadDevice - Device = ", Device);
-        this.device = Device;
-        Device = null;
-        // find the local host in a net and set the enable flag on the net
-        if (this.nets != null) {
-          for (let i = 0; i < this.nets.length; i++) {
-            for (let j = 0; j < this.nets[i].vpns.length; j++) {
-              if (this.nets[i].vpns[j].deviceid == this.device.id) {
-                this.nets[i].enable = this.nets[i].vpns[j].enable;
-              }
-            }
-          }
-        }
+        this.logout(item);
+        this.$forceUpdate();
       }
     },
     loadNets() {
@@ -821,23 +903,23 @@ export default {
         console.log("child = %s", child);
       }
     },
-    async startCreate() {
-      // if (Nets != null) {
-      //  this.nets = Nets;
-      //}
-      await this.getNetList();
-      await this.getAccountsList();
+    async startCreate(item) {
+      this.device = item.device;
+      this.savedItem = item;
+
+      await this.getNetList(item);
+      await this.getAccountsList(item);
 
       this.netList = { selected: { text: "", value: "" }, items: [] };
 
       var selected = 0;
       let k = 0;
       for (let i = 0; i < this.myNets.length; i++) {
-        if (this.nets != null) {
+        if (item.config != null) {
           // filter out any nets that are already in the list
           let found = false;
-          for (let j = 0; j < this.nets.length; j++) {
-            if (this.myNets[i].id == this.nets[j].netid) {
+          for (let j = 0; j < item.config.length; j++) {
+            if (this.myNets[i].id == item.config[j].netid) {
               found = true;
               break;
             }
@@ -1014,28 +1096,47 @@ export default {
       console.log("createVPN vpn = ", this.vpn);
       this.createVPN(vpn);
     },
+    addServer() {
+      console.log("Add Server");
+      this.dialogServer = true;
+    },
+    createServer() {
+      console.log("Create Server: ", this.server);
+      var s = { device: { server: this.server, config: [] } };
+      s.name = this.server.replace("https://", "");
+      s.class = "btn btn-danger";
+      s.device.name = os.hostname();
+      s.device.ezcode = "";
+      s.device.id = "";
+      s.device.apiKey = "";
+      s.device.instanceid = "";
+      this.servers.push(s);
+      this.dialogServer = false;
+    },
+
     createVPN(vpn) {
-      let accessToken = ipcRenderer.sendSync("accessToken");
+      let item = this.savedItem;
+      let accessToken = item.accessToken;
       console.log("createVPN accessToken = ", accessToken);
 
-      if (this.device.id == "") {
-        this.device.name = os.hostname();
-        this.device.accountid = vpn.accountid;
+      if (item.device.id == "") {
+        item.device.name = os.hostname();
+        item.device.accountid = vpn.accountid;
         axios
-          .post(this.device.server + "/api/v1.0/device", this.device, {
+          .post(item.device.server + "/api/v1.0/device", item.device, {
             headers: {
               Authorization: "Bearer " + accessToken,
             },
           })
           .then((response) => {
-            this.device = response.data;
-            console.log("device = ", this.device);
-            vpn.deviceid = this.device.id;
+            item.device = response.data;
+            console.log("device = ", item.device);
+            vpn.deviceid = item.device.id;
 
-            this.saveSettings();
+            this.saveSettings(item.device);
 
             axios
-              .post(this.device.server + "/api/v1.0/vpn", vpn, {
+              .post(item.device.server + "/api/v1.0/vpn", vpn, {
                 headers: {
                   Authorization: "Bearer " + accessToken,
                 },
@@ -1056,7 +1157,7 @@ export default {
           });
       } else {
         axios
-          .post(this.device.server + "/api/v1.0/vpn", vpn, {
+          .post(item.device.server + "/api/v1.0/vpn", vpn, {
             headers: {
               Authorization: "Bearer " + accessToken,
             },
@@ -1073,21 +1174,21 @@ export default {
           });
       }
     },
-    async callLogout() {
+    async callLogout(server) {
       return new Promise((resolve) => {
         console.log("callLogout");
-        ipcRenderer.invoke("logout");
+        ipcRenderer.invoke("logout", server);
         console.log("callLogout - after logout");
         resolve();
       });
     },
-    async getAccountsList() {
+    async getAccountsList(item) {
       return new Promise((resolve, reject) => {
-        let accessToken = ipcRenderer.sendSync("accessToken");
+        let accessToken = item.accessToken;
         console.log("getAccountsList accessToken = ", accessToken);
         if (!accessToken) return reject(new Error("no access token available"));
         axios
-          .get(this.device.server + "/api/v1.0/accounts/", {
+          .get(item.device.server + "/api/v1.0/accounts/", {
             headers: {
               Authorization: "Bearer " + accessToken,
             },
@@ -1101,13 +1202,13 @@ export default {
           });
       });
     },
-    async getNetList() {
+    async getNetList(item) {
       return new Promise((resolve, reject) => {
-        let accessToken = ipcRenderer.sendSync("accessToken");
+        let accessToken = item.accessToken;
         console.log("getNetList accessToken = ", accessToken);
         if (!accessToken) return reject(new Error("no access token available"));
         axios
-          .get(this.device.server + "/api/v1.0/net", {
+          .get(item.device.server + "/api/v1.0/net", {
             headers: {
               Authorization: "Bearer " + accessToken,
             },
@@ -1122,11 +1223,11 @@ export default {
       });
     },
 
-    async EnableVPN(net) {
+    async EnableVPN(item, net) {
       console.log("Enable VPN: ", net);
       let vpn = null;
       for (let i = 0; i < net.vpns.length; i++) {
-        if (net.vpns[i].deviceid == this.device.id) {
+        if (net.vpns[i].deviceid == item.device.id) {
           vpn = net.vpns[i];
           break;
         }
@@ -1185,13 +1286,13 @@ export default {
       });
     },
 
-    async deleteVPN(net) {
-      if (confirm(`Do you really want to delete ${net.netName} ?`)) {
-        console.log("deleteVPN ", net);
+    async deleteVPN(item, config) {
+      if (confirm(`Do you really want to delete ${config.netName} ?`)) {
+        console.log("deleteVPN ", config);
         let vpn = null;
-        for (let i = 0; i < net.vpns.length; i++) {
-          if (net.vpns[i].deviceid == this.device.id) {
-            vpn = net.vpns[i];
+        for (let i = 0; i < config.vpns.length; i++) {
+          if (config.vpns[i].deviceid == item.device.id) {
+            vpn = config.vpns[i];
             break;
           }
         }
@@ -1200,40 +1301,62 @@ export default {
           return new Error("local vpn not found on device");
         }
 
+        console.log("DeleteVPN: vpn = ", vpn);
+
         axios
-          .delete("http://127.0.0.1:53280/vpn/" + vpn.id + "/", {
+          .delete("http://127.0.0.1:53280/vpn/" + vpn.id, {
             headers: {},
           })
           .then((response) => {
-            console.log("stopService response = ", response);
+            console.log("deleteVPN response = ", response);
           });
       }
     },
 
-    startSettings() {
+    startSettings(item) {
+      this.device = item.device;
       this.dialogSettings = true;
     },
-    async saveSettings() {
+    deleteSettings() {
+      if (
+        confirm(
+          `Do you really want to delete this device ${this.device.name}?  This will also remove this server ${this.device.server} as well as VPNs associated with it.`
+        )
+      ) {
+        axios
+          .delete("http://127.0.0.1:53280/device/" + this.device.id, {
+            headers: {},
+          })
+          .then(() => {
+            console.log("deleteSettings - after delete");
+            this.dialogSettings = false;
+          });
+      } else {
+        this.dialogSettings = false;
+      }
+    },
+
+    async saveSettings(device) {
       this.dialogSettings = false;
 
       axios
         .get(
           "http://127.0.0.1:53280/config/?server=" +
-            this.device.server +
+            device.server +
             "&id=" +
-            this.device.id +
+            device.id +
             "&name=" +
-            this.device.name +
+            device.name +
             "&apiKey=" +
-            this.device.apiKey +
+            device.apiKey +
             "&ezcode=" +
-            this.device.ezcode +
+            device.ezcode +
             "&instanceid=" +
-            this.device.instanceid +
+            device.instanceid +
             "&appdata=" +
-            this.device.appData +
+            device.appData +
             "&accountid=" +
-            this.device.accountid,
+            device.accountid,
           {
             headers: {},
           }
@@ -1270,33 +1393,29 @@ export default {
         autoLauncher.disable();
       }
     },
-    loadNetwork(evt) {
-      let name = evt.currentTarget.innerText;
+    loadNetwork(config) {
+      console.log("loadNetwork: ", config);
+      let name = config.netName;
+      this.netName = config.netName;
       let x = 0;
       let l = 0;
       this.links = [];
       this.nodes = [];
       let net_vpns = [];
-      for (let i = 0; i < this.nets.length; i++) {
-        if (this.nets[i].netName == name) {
-          this.net = this.nets[i];
-          break;
-        }
-      }
+      this.net = config;
       this.seriesInit = true;
-      this.netName = this.net.netName;
       this.showChart = true;
 
-      for (let i = 0; i < this.net.vpns.length; i++) {
-        if (this.net.vpns[i].netName == name) {
-          net_vpns[x] = this.net.vpns[i];
-          this.nodes[x] = { id: x, name: this.net.vpns[i].name };
-          if (this.net.vpns[i].current.endpoint == "") {
+      for (let i = 0; i < config.vpns.length; i++) {
+        if (config.vpns[i].netName == name) {
+          net_vpns[x] = config.vpns[i];
+          this.nodes[x] = { id: x, name: config.vpns[i].name };
+          if (config.vpns[i].current.endpoint == "") {
             this.nodes[x]._color = "#34adcd";
           } else {
             this.nodes[x]._color = "#83c44d";
           }
-          if (this.net.vpns[i].role == "Egress") {
+          if (config.vpns[i].role == "Egress") {
             this.nodes[x]._color = "#50C878";
           }
           x++;
