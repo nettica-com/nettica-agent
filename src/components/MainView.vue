@@ -107,7 +107,7 @@
                     <v-btn
                       class="mx-2"
                       icon
-                      @click="launchSSH(net, vpn)"
+                      @click="launchSSH(item, net, vpn)"
                       title="SSH"
                       :disabled="!vpn.current.hasSSH"
                     >
@@ -118,7 +118,7 @@
                     <v-btn
                       class="mx-2"
                       icon
-                      @click="launchRDP(net, vpn)"
+                      @click="launchRDP(item, net, vpn)"
                       title="Remote Desktop"
                       :disabled="!vpn.current.hasRDP"
                     >
@@ -690,7 +690,7 @@ export default {
     });
     ipcRenderer.on("update-downloaded", (event, args) => {
       console.log("update-downloaded", args);
-      alert("An update has been downloaded. Click to install.");
+      alert("An update has been downloaded. Quit this app to install.");
       ipcRenderer.send("install-now");
     });
     this.$vuetify.theme.dark = true;
@@ -712,32 +712,6 @@ export default {
     console.log("Config = ", config);
     this.nets = config.config;
 
-    try {
-      this.device = {};
-      this.device.server = "https://my.nettica.com";
-      this.device.sourceAddress = "0.0.0.0";
-      this.device.quiet = true;
-      this.device.checkInterval = 10;
-      this.device.id = "";
-      this.device.name = os.hostname();
-      this.device.os = os.platform();
-      this.device.arch = os.arch();
-    } catch (e) {
-      console.error("nettica.conf does not exist: ", e.toString());
-
-      this.device = {};
-      this.device.server = "https://my.nettica.com";
-      this.device.sourceAddress = "0.0.0.0";
-      this.device.quiet = true;
-      this.device.checkInterval = 10;
-      this.device.id = "";
-      this.device.name = os.hostname();
-      this.device.os = os.platform();
-      this.device.arch = os.arch();
-    }
-
-    console.log("device = ", this.device);
-
     autoLauncher.isEnabled().then((isEnabled) => {
       this.autoLaunch = isEnabled;
     });
@@ -747,7 +721,6 @@ export default {
       this.dialogAbout = true;
     });
 
-    // setInterval(loadNets, 1000);
     setInterval(() => {
       this.oneHour++;
       if (this.oneHour > (60 * 60) / 5) {
@@ -758,7 +731,6 @@ export default {
 
         this.oneHour = 0;
       }
-      this.loadNets();
       this.loadQueries();
       if (this.net != null) {
         console.log("getMetrics", this.net.netName);
@@ -799,22 +771,6 @@ export default {
         this.$forceUpdate();
       }
     },
-    loadNets() {
-      if (Nets) {
-        console.log("loadNets - Nets = ", Nets);
-        this.nets = Nets;
-        Nets = null;
-        console.log("loadNets Config = ", this.nets);
-        // find the local host in a net and set the enable flag on the net
-        for (let i = 0; i < this.nets.length; i++) {
-          for (let j = 0; j < this.nets[i].vpns.length; j++) {
-            if (this.nets[i].vpns[j].deviceid == this.device.id) {
-              this.nets[i].enable = this.nets[i].vpns[j].enable;
-            }
-          }
-        }
-      }
-    },
     loadQueries() {
       if (Queries) {
         for (let i = 0; i < Queries.length; i++) {
@@ -827,15 +783,15 @@ export default {
         Queries = [];
       }
     },
-    launchSSH(net, item) {
+    launchSSH(item, net, vpn) {
       console.log("SSH Item: ", item, net);
-      var name = item.name;
-      if (this.isDnsEnabled(net) == false) {
-        var parts = item.current.address[0].split("/");
+      var name = vpn.name;
+      if (this.isDnsEnabled(item, net) == false) {
+        var parts = vpn.current.address[0].split("/");
         name = parts[0];
       }
       if (os.platform == "win32") {
-        console.log("item = ", item);
+        console.log("vpn = ", vpn);
         spawn("cmd.exe", ["/c", "wt.exe", "-w", "ssh", "nt", "ssh.exe", name], {
           windowsHide: true,
           detached: true,
@@ -884,12 +840,12 @@ export default {
         console.log("child = ", child);
       }
     },
-    isDnsEnabled(net) {
+    isDnsEnabled(item, net) {
       var enabled = false;
-      for (let i = 0; i < net.vpns.length; i++) {
+      for (let j = 0; j < net.vpns.length; j++) {
         if (
-          net.vpns[i].deviceid == this.device.id &&
-          net.vpns[i].current.enableDns == true
+          net.vpns[j].deviceid == item.device.id &&
+          net.vpns[j].current.enableDns == true
         ) {
           enabled = true;
           break;
@@ -897,11 +853,11 @@ export default {
       }
       return enabled;
     },
-    launchRDP(net, item) {
-      console.log("RDP Item", item, net);
-      var name = item.name;
-      if (this.isDnsEnabled(net) == false) {
-        var parts = item.current.address[0].split("/");
+    launchRDP(item, net, vpn) {
+      console.log("RDP Item", vpn, net);
+      var name = vpn.name;
+      if (this.isDnsEnabled(item, net) == false) {
+        var parts = vpn.current.address[0].split("/");
         name = parts[0];
       }
       if (os.platform == "win32") {
