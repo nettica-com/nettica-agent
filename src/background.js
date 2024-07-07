@@ -45,7 +45,7 @@ function getServers() {
   const files = fs.readdirSync(NetticaServersPath);
   files.forEach((file) => {
     console.log("file = ", file);
-    if (file.endsWith(".json") && file != "nettica.json") {
+    if (file.endsWith(".json") && file != "nettica.json" && file != "keys.json" && !file.endsWith("-service-host.json") ) {
       try {
         console.log("server file = ", NetticaServersPath + file);
         let server = JSON.parse(fs.readFileSync(NetticaServersPath + file));
