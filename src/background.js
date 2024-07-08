@@ -124,10 +124,18 @@ ipcMain.on("accessToken", (event) => {
 });
 
 if (os.platform == "win32") {
-  ipcMain.on("update-now", () => {
-    autoUpdater.quitAndInstall();
+  ipcMain.on("install-now", () => {
+    autoUpdater.quitAndInstall( true, true );
   });
+
+  autoUpdater.on('error', (message) => {
+    console.error('There was a problem updating the application')
+    console.error(message)
+    alert('There was a problem updating the application')
+
+  })
 }
+
 
 ipcMain.handle("logout", (event) => {
   console.log("*** logout received ***");
@@ -486,7 +494,7 @@ app.on("ready", async () => {
 
   if (os.platform == "win32") {
     autoUpdater.on("update-available", () => {
-      mainWindow.webContents.send("update-available");
+      // mainWindow.webContents.send("update-available");
     });
 
     autoUpdater.on("update-downloaded", () => {

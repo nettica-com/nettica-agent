@@ -690,7 +690,7 @@ export default {
     });
     ipcRenderer.on("update-downloaded", (event, args) => {
       console.log("update-downloaded", args);
-      alert("An update has been downloaded. Quit this app to install.");
+      alert("An update has been downloaded and is ready to install.");
       ipcRenderer.send("install-now");
     });
     this.$vuetify.theme.dark = true;
