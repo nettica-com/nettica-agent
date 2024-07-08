@@ -1071,14 +1071,28 @@ export default {
     },
     createServer() {
       console.log("Create Server: ", this.server);
+
+      if (this.server == "") {
+        return;
+      }
+
+      for (let i = 0; i < this.servers.length; i++) {
+        if (this.servers[i].device.server == this.server) {
+          return;
+        }
+      }
+
       var s = { device: { server: this.server, config: [] } };
       s.name = this.server.replace("https://", "");
       s.class = "btn btn-danger";
       s.device.name = os.hostname();
+      s.device.server = this.server;
       s.device.ezcode = "";
       s.device.id = "";
       s.device.apiKey = "";
       s.device.instanceid = "";
+      s.device.enable = true;
+
       this.servers.push(s);
       this.dialogServer = false;
     },
