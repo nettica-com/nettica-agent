@@ -131,8 +131,6 @@ if (os.platform == "win32") {
   autoUpdater.on('error', (message) => {
     console.error('There was a problem updating the application')
     console.error(message)
-    alert('There was a problem updating the application')
-
   })
 }
 
@@ -422,12 +420,15 @@ function startWatcher(path) {
     .on("remove", function (path) {
       if (path.endsWith(".json")) {
         let server_name = path.split("/").pop();
-        server_name = server_name.trimEnd(".json");
+        server_name = server_name.split("\\").pop();
+        server_name = server_name.replace(".json", "");
+        console.log("server_name = ", server_name, " servers.length = ", servers.length);
         for (let i = 0; i < servers.length; i++) {
           if (
             servers[i].device.server == "https://" + server_name ||
             servers[i].device.server == "http://" + server_name
           ) {
+            console.log("server removed = ", servers[i].device.server);
             servers.splice(i, 1);
             break;
           }
@@ -439,7 +440,9 @@ function startWatcher(path) {
     .on("unlink", function (path) {
       if (path.endsWith(".json")) {
         let server_name = path.split("/").pop();
-        server_name = server_name.trimEnd(".json");
+        server_name = server_name.split("\\").pop();
+        server_name = server_name.replace(".json", "");
+        console.log("server_name = ", server_name, " servers.length = ", servers.length);
         for (let i = 0; i < servers.length; i++) {
           if (
             servers[i].device.server == "https://" + server_name ||
@@ -450,7 +453,7 @@ function startWatcher(path) {
           }
         }
         mainWindow.webContents.send("handle-servers", servers);
-        console.log("File", path, "has been removed");
+        console.log("File", path, "has been removed (unlink)");
       }
     })
     .on("unlinkDir", function (path) {

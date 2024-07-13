@@ -640,8 +640,7 @@ export default {
   },
   created() {
     ipcRenderer.on("handle-servers", (event, args) => {
-      var oldServers = this.servers;
-      console.log("oldServers = ", oldServers);
+      console.log("args (servers) = ", args);
       this.servers = args;
 
       /*      for (let i = 0; i < args.length; i++) {
