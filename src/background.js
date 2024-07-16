@@ -45,7 +45,12 @@ function getServers() {
   const files = fs.readdirSync(NetticaServersPath);
   files.forEach((file) => {
     console.log("file = ", file);
-    if (file.endsWith(".json") && file != "nettica.json" && file != "keys.json" && !file.endsWith("-service-host.json") ) {
+    if (
+      file.endsWith(".json") &&
+      file != "nettica.json" &&
+      file != "keys.json" &&
+      !file.endsWith("-service-host.json")
+    ) {
       try {
         console.log("server file = ", NetticaServersPath + file);
         let server = JSON.parse(fs.readFileSync(NetticaServersPath + file));
@@ -125,15 +130,14 @@ ipcMain.on("accessToken", (event) => {
 
 if (os.platform == "win32") {
   ipcMain.on("install-now", () => {
-    autoUpdater.quitAndInstall( true, true );
+    autoUpdater.quitAndInstall(true, true);
   });
 
-  autoUpdater.on('error', (message) => {
-    console.error('There was a problem updating the application')
-    console.error(message)
-  })
+  autoUpdater.on("error", (message) => {
+    console.error("There was a problem updating the application");
+    console.error(message);
+  });
 }
-
 
 ipcMain.handle("logout", (event) => {
   console.log("*** logout received ***");
@@ -422,7 +426,12 @@ function startWatcher(path) {
         let server_name = path.split("/").pop();
         server_name = server_name.split("\\").pop();
         server_name = server_name.replace(".json", "");
-        console.log("server_name = ", server_name, " servers.length = ", servers.length);
+        console.log(
+          "server_name = ",
+          server_name,
+          " servers.length = ",
+          servers.length
+        );
         for (let i = 0; i < servers.length; i++) {
           if (
             servers[i].device.server == "https://" + server_name ||
@@ -442,7 +451,12 @@ function startWatcher(path) {
         let server_name = path.split("/").pop();
         server_name = server_name.split("\\").pop();
         server_name = server_name.replace(".json", "");
-        console.log("server_name = ", server_name, " servers.length = ", servers.length);
+        console.log(
+          "server_name = ",
+          server_name,
+          " servers.length = ",
+          servers.length
+        );
         for (let i = 0; i < servers.length; i++) {
           if (
             servers[i].device.server == "https://" + server_name ||

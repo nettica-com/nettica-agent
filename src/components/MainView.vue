@@ -342,6 +342,11 @@
                 <v-text-field v-model="device.id" label="Device ID" />
                 <v-text-field v-model="device.apiKey" label="Api Key" />
                 <v-text-field v-model="device.instanceid" label="Instance ID" />
+                <v-select
+                  v-model="device.logging"
+                  :items="loglevel.items"
+                  label="Logging"
+                />
                 <v-switch
                   v-model="autoLaunch"
                   label="Launch at start-up"
@@ -481,6 +486,7 @@ export default {
       name: os.hostname(),
       ezcode: "",
       id: "",
+      logging: "",
       apiKey: "",
       instanceid: "",
       os: os.platform(),
@@ -511,6 +517,15 @@ export default {
     acntList: {},
     nodes: [],
     links: [],
+    loglevel: {
+      selected: { text: "None", value: "" },
+      items: [
+        { text: "None", value: "" },
+        { text: "Error", value: "error" },
+        { text: "Info", value: "info" },
+        { text: "Debug", value: "debug" },
+      ],
+    },
     nodeSize: 30,
     selected: "",
     dialogCreate: false,
@@ -1335,8 +1350,8 @@ export default {
             device.ezcode +
             "&instanceid=" +
             device.instanceid +
-            "&appdata=" +
-            device.appData +
+            "&logging=" +
+            device.logging +
             "&accountid=" +
             device.accountid,
           {
