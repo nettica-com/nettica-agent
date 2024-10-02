@@ -420,6 +420,9 @@ const ApexCharts = window.require("apexcharts");
 const os = window.require("os");
 const AutoLaunch = window.require("auto-launch");
 
+// a blank console.log function to disable logging
+console.log = function () {};
+
 var appData = "C:\\ProgramData";
 var { version } = pack;
 
@@ -656,21 +659,9 @@ export default {
   created() {
     ipcRenderer.on("handle-servers", (event, args) => {
       console.log("args (servers) = ", args);
+      this.servers = null;
       this.servers = args;
 
-      /*      for (let i = 0; i < args.length; i++) {
-        for (let j = 0; j < this.servers.length; j++) {
-          if (this.servers[j].device.server == args[i].device.server) {
-            args[i].accessToken = this.servers[j].accessToken;
-            args[i].class = this.servers[j].class;
-            args[i].config = this.servers[j].config;
-            args[i].device = this.servers[j].device;
-            args[i].name = this.servers[j].name;
-          }
-        }
-      }
-      this.servers = args;
-      console.log("servers = ", this.servers);*/
       // find the local host in a net and set the enable flag on the net
       for (let x = 0; x < this.servers.length; x++) {
         this.servers[x].name = this.servers[x].device.server.replace(
