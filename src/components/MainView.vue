@@ -93,7 +93,30 @@
                 v-model="net.enable"
                 v-on:change="EnableVPN(item, net)"
               />
-              {{ net.netName }}
+              <table>
+                <tr>
+                  <td>
+                    <v-label
+                      :key="index"
+                      class="pt-5 pb-0 pr-5 pl-5"
+                      style="font-size: 18px; font-family: Roboto"
+                      v-model="net.netName"
+                      >{{ net.netName }}</v-label
+                    >
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <v-label
+                      class="pt-0 pb-5 pr-5 pl-5"
+                      style="font-size: 12px; font-family: Roboto"
+                      v-model="net.description"
+                    >
+                      {{ net.description }}</v-label
+                    >
+                  </td>
+                </tr>
+              </table>
               <v-spacer />
             </v-expansion-panel-header>
             <v-expansion-panel-content>
