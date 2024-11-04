@@ -6,6 +6,7 @@ import {
   BrowserWindow,
   Tray,
   Menu,
+  MenuItem,
   nativeImage,
   ipcMain,
 } from "electron";
@@ -13,7 +14,6 @@ import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 import authService from "./services/auth-service";
 import windowStateKeeper from "electron-window-state";
-
 const fs = require("fs");
 const path = require("path");
 const fileWatcher = require("chokidar");
@@ -22,6 +22,7 @@ const { Notification } = require("electron");
 const { autoUpdater } = require("electron-updater");
 
 var icon = path.join(__static, "./nettica.png");
+var tray;
 
 var appData;
 if (process.env.ALLUSERSPROFILE != null) {
@@ -186,8 +187,6 @@ app.whenReady().then(() => {
   }
 });
 const isDevelopment = process.env.NODE_ENV !== "production";
-
-let tray;
 
 let mainWindow;
 
@@ -389,6 +388,7 @@ function startWatcher(path) {
           let server = JSON.parse(fs.readFileSync(path));
           servers.push(server);
           mainWindow.webContents.send("handle-servers", servers);
+          if (tray) tray.setContextMenu(createContextMenu());
         } catch (err) {
           console.error("Error reading json file: ", err);
         }
@@ -416,6 +416,7 @@ function startWatcher(path) {
             servers.push(s);
           }
           mainWindow.webContents.send("handle-servers", servers);
+          if (tray) tray.setContextMenu(createContextMenu());
         } catch (err) {
           console.error("Error reading json file: ", err);
         }
@@ -443,6 +444,7 @@ function startWatcher(path) {
           }
         }
         mainWindow.webContents.send("handle-servers", servers);
+        if (tray) tray.setContextMenu(createContextMenu());
         console.log("File", path, "has been removed");
       }
     })
@@ -467,6 +469,7 @@ function startWatcher(path) {
           }
         }
         mainWindow.webContents.send("handle-servers", servers);
+        if (tray) tray.setContextMenu(createContextMenu());
         console.log("File", path, "has been removed (unlink)");
       }
     })
@@ -526,27 +529,7 @@ app.on("ready", async () => {
     mainWindow.show();
   });
 
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: "About",
-      click: function () {
-        mainWindow.show();
-        createAboutWindow();
-      },
-    },
-    {
-      label: "Open",
-      click: function () {
-        mainWindow.show();
-      },
-    },
-    {
-      label: "Exit",
-      click: function () {
-        app.exit(0);
-      },
-    },
-  ]);
+  let contextMenu = createContextMenu();
 
   tray.setContextMenu(contextMenu);
   tray.setToolTip("Nettica Agent");
@@ -570,6 +553,63 @@ if (isDevelopment) {
       app.quit();
     });
   }
+}
+
+function createContextMenu() {
+  let contextMenu = new Menu();
+  for (let i = 0; i < servers.length; i++) {
+    for (let j = 0; j < servers[i].config.length; j++) {
+      for (let k = 0; k < servers[i].config[j].vpns.length; k++) {
+        let vpn = servers[i].config[j].vpns[k];
+        if (vpn.deviceid == servers[i].device.id) {
+          contextMenu.append(
+            new MenuItem({
+              type: "checkbox",
+              checked: vpn.enable,
+              label: vpn.netName,
+              sublabel: servers[i].config[j].description,
+              click: function () {
+                mainWindow.webContents.send("handle-vpn", vpn);
+              },
+            })
+          );
+          break;
+        }
+      }
+    }
+  }
+
+  if (contextMenu.items.length > 0) {
+    contextMenu.append(new MenuItem({ type: "separator" }));
+  }
+
+  contextMenu.append(
+    new MenuItem({
+      label: "About                                             ",
+      click: function () {
+        mainWindow.show();
+        createAboutWindow();
+      },
+    })
+  );
+  contextMenu.append(
+    new MenuItem({
+      label: "Open",
+      click: function () {
+        mainWindow.show();
+      },
+    })
+  );
+  contextMenu.append(
+    new MenuItem({
+      label: "Exit",
+      click: function () {
+        app.exit(0);
+      },
+    })
+  );
+
+  return contextMenu;
 }
 
 export default {

@@ -721,6 +721,18 @@ export default {
       alert("An update has been downloaded and is ready to install.");
       ipcRenderer.send("install-now");
     });
+    ipcRenderer.on("handle-vpn", (event, args) => {
+      console.log("handle-vpn", args);
+      this.vpn = args;
+
+      // toggle the vpn
+      if (!this.vpn.enable) {
+        this.startService(this.vpn.netName);
+      } else {
+        this.stopService(this.vpn.netName);
+      }
+    });
+
     this.$vuetify.theme.dark = true;
     let config = {};
     config.config = [];
