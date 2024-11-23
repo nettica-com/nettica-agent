@@ -526,6 +526,7 @@ app.on("ready", async () => {
   tray = new Tray(i);
 
   tray.on("click", function () {
+    console.log("tray clicked mainWindow = ", mainWindow);
     mainWindow.show();
   });
 
@@ -556,59 +557,72 @@ if (isDevelopment) {
 }
 
 function createContextMenu() {
-  let contextMenu = new Menu();
-  for (let i = 0; i < servers.length; i++) {
-    for (let j = 0; j < servers[i].config.length; j++) {
-      for (let k = 0; k < servers[i].config[j].vpns.length; k++) {
-        let vpn = servers[i].config[j].vpns[k];
-        if (vpn.deviceid == servers[i].device.id) {
-          contextMenu.append(
-            new MenuItem({
-              type: "checkbox",
-              checked: vpn.enable,
-              label: vpn.netName,
-              sublabel: servers[i].config[j].description,
-              click: function () {
-                mainWindow.webContents.send("handle-vpn", vpn);
-              },
-            })
-          );
-          break;
+  try {
+    console.log("createContextMenu");
+    contextMenu = new Menu();
+    /*
+    if (servers != null && servers.length > 0) {
+      for (let i = 0; i < servers.length; i++) {
+        if (servers[i].config == null) {
+          continue;
+        }
+        for (let j = 0; j < servers[i].config.length; j++) {
+          if (servers[i].config[j].vpns == null) {
+            continue;
+          }
+          for (let k = 0; k < servers[i].config[j].vpns.length; k++) {
+            let vpn = servers[i].config[j].vpns[k];
+            if (vpn.deviceid == servers[i].device.id) {
+              contextMenu.append(
+                new MenuItem({
+                  type: "checkbox",
+                  checked: vpn.enable,
+                  label: vpn.netName,
+                  sublabel: servers[i].config[j].description,
+                  click: function () {
+                    mainWindow.webContents.send("handle-vpn", vpn);
+                  },
+                })
+              );
+              break;
+            }
+          }
         }
       }
+
+      if (contextMenu.items != null && contextMenu.items.length > 0) {
+        contextMenu.append(new MenuItem({ type: "separator" }));
+      }
     }
+  */
+    contextMenu.append(
+      new MenuItem({
+        label: "About                                             ",
+        click: function () {
+          mainWindow.show();
+          createAboutWindow();
+        },
+      })
+    );
+    contextMenu.append(
+      new MenuItem({
+        label: "Open",
+        click: function () {
+          mainWindow.show();
+        },
+      })
+    );
+    contextMenu.append(
+      new MenuItem({
+        label: "Exit",
+        click: function () {
+          app.exit(0);
+        },
+      })
+    );
+  } catch (e) {
+    console.error("createContextMenu error:", e.toString());
   }
-
-  if (contextMenu.items.length > 0) {
-    contextMenu.append(new MenuItem({ type: "separator" }));
-  }
-
-  contextMenu.append(
-    new MenuItem({
-      label: "About                                             ",
-      click: function () {
-        mainWindow.show();
-        createAboutWindow();
-      },
-    })
-  );
-  contextMenu.append(
-    new MenuItem({
-      label: "Open",
-      click: function () {
-        mainWindow.show();
-      },
-    })
-  );
-  contextMenu.append(
-    new MenuItem({
-      label: "Exit",
-      click: function () {
-        app.exit(0);
-      },
-    })
-  );
-
   return contextMenu;
 }
 
