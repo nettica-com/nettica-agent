@@ -526,6 +526,7 @@ app.on("ready", async () => {
   tray = new Tray(i);
 
   tray.on("click", function () {
+    console.log("tray clicked mainWindow = ", mainWindow);
     mainWindow.show();
   });
 
