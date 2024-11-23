@@ -557,32 +557,39 @@ if (isDevelopment) {
 
 function createContextMenu() {
   let contextMenu = new Menu();
-  for (let i = 0; i < servers.length; i++) {
-    for (let j = 0; j < servers[i].config.length; j++) {
-      for (let k = 0; k < servers[i].config[j].vpns.length; k++) {
-        let vpn = servers[i].config[j].vpns[k];
-        if (vpn.deviceid == servers[i].device.id) {
-          contextMenu.append(
-            new MenuItem({
-              type: "checkbox",
-              checked: vpn.enable,
-              label: vpn.netName,
-              sublabel: servers[i].config[j].description,
-              click: function () {
-                mainWindow.webContents.send("handle-vpn", vpn);
-              },
-            })
-          );
-          break;
+  if (servers != null && servers.length > 0) {
+    for (let i = 0; i < servers.length; i++) {
+      if (servers[i].config == null) {
+        continue;
+      }
+      for (let j = 0; j < servers[i].config.length; j++) {
+        if (servers[i].config[j].vpns == null) {
+          continue;
+        }
+        for (let k = 0; k < servers[i].config[j].vpns.length; k++) {
+          let vpn = servers[i].config[j].vpns[k];
+          if (vpn.deviceid == servers[i].device.id) {
+            contextMenu.append(
+              new MenuItem({
+                type: "checkbox",
+                checked: vpn.enable,
+                label: vpn.netName,
+                sublabel: servers[i].config[j].description,
+                click: function () {
+                  mainWindow.webContents.send("handle-vpn", vpn);
+                },
+              })
+            );
+            break;
+          }
         }
       }
     }
-  }
 
-  if (contextMenu.items.length > 0) {
-    contextMenu.append(new MenuItem({ type: "separator" }));
+    if (contextMenu.items != null && contextMenu.items.length > 0) {
+      contextMenu.append(new MenuItem({ type: "separator" }));
+    }
   }
-
   contextMenu.append(
     new MenuItem({
       label: "About                                             ",
