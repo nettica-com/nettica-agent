@@ -24,6 +24,9 @@ const { autoUpdater } = require("electron-updater");
 var icon = path.join(__static, "./nettica.png");
 var tray;
 
+// a blank console.log function to disable logging
+console.log = function () {};
+
 var appData;
 if (process.env.ALLUSERSPROFILE != null) {
   appData = process.env.ALLUSERSPROFILE;

@@ -682,6 +682,20 @@ export default {
   created() {
     ipcRenderer.on("handle-servers", (event, args) => {
       console.log("args (servers) = ", args);
+      // go through the servers and put the access token into the args
+      if (this.servers != null) {
+        for (let i = 0; i < this.servers.length; i++) {
+          for (let j = 0; j < args.length; j++) {
+            if (this.servers[i].name == args[j].name) {
+              args[j].accessToken = this.servers[i].accessToken;
+              args[j].class = this.servers[i].class;
+              if (args[j].class == null || args[j].class == "") {
+                args[j].class = "btn btn-danger";
+              }
+            }
+          }
+        }
+      }
       this.servers = null;
       this.servers = args;
 
@@ -691,7 +705,12 @@ export default {
           "https://",
           ""
         );
-        this.servers[x].class = "btn btn-danger";
+        if (this.servers[x].class == null) {
+          this.servers[x].class = "btn btn-danger";
+        }
+        if (this.servers[x].config == null) {
+          this.servers[x].config = [];
+        }
         for (let i = 0; i < this.servers[x].config.length; i++) {
           for (let j = 0; j < this.servers[x].config[i].vpns.length; j++) {
             if (
@@ -793,8 +812,13 @@ export default {
       if (item.accessToken == null) {
         try {
           this.savedItem = item;
-          await ipcRenderer.sendSync("authenticate", item.device.server);
+          item.accessToken = await ipcRenderer.sendSync(
+            "authenticate",
+            item.device.server
+          );
+          console.log("login - accessToken = ", item.accessToken);
           item.class = "btn btn-success";
+          this.savedItem = item;
           this.loginText = "Logout";
           this.logged_in = true;
           this.$forceUpdate();
@@ -802,12 +826,12 @@ export default {
           console.log("login - error = ", e);
         }
       } else {
-        item.accessToken = null;
         item.class = "btn btn-danger";
         console.log("logout - accessToken = ", item.accessToken);
         this.loginText = "Login";
         this.logged_in = false;
         this.logout(item);
+        item.accessToken = null;
         this.$forceUpdate();
       }
     },
