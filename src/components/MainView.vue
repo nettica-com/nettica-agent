@@ -2,7 +2,13 @@
   <div>
     <div class="row">
       <header>
-        <nav class="navbar navbar-dark bg-dark">
+        <nav
+          class="navbar navbar-dark bg-dark"
+          style="
+            background-image: url('wide-network.jpeg');
+            background-size: cover;
+          "
+        >
           <span>
             <img
               class="mr-3 ml-3"
@@ -38,17 +44,16 @@
         >
         <div style="flex-grow: 1; margin-left: auto"></div>
         <button
-          class="btn btn-primary my-2 my-sm-0"
+          class="btn btn-primary mr-2 my-2 my-sm-0"
           icon
           @click="startSettings(item)"
         >
           <v-icon title="Settings" dark> mdi-cog-outline </v-icon>
         </button>
-        &nbsp;
         <button
           :disabled="addNetDisabled"
           @click="startCreate(item)"
-          class="btn btn-primary my-2 my-sm-0"
+          class="btn btn-primary mr-2 my-2 my-sm-0"
         >
           <img
             title="Join Network"
@@ -57,7 +62,14 @@
             alt="nettica"
           />
         </button>
-        &nbsp;
+        <button
+          :hidden="true"
+          @click="startAccount(item)"
+          class="btn btn-primary mr-2 my-2 my-sm-0"
+        >
+          <v-icon title="Account" dark> mdi-people </v-icon>
+          />
+        </button>
         <button :class="item.class" @click="login(item)" type="button">
           <v-icon :title="loginText" dark> mdi-lock </v-icon>
         </button>
@@ -537,6 +549,7 @@ export default {
       },
     },
     netName: "",
+    accounts: [],
     myNets: [],
     netList: {},
     myAccounts: [],
@@ -978,6 +991,15 @@ export default {
       this.acntList.selected = this.acntList.items[selected];
 
       this.dialogCreate = true;
+    },
+
+    async startAccount(item) {
+      this.device = item.device;
+      this.savedItem = item;
+
+      await this.getAccountsList(item);
+
+      this.dialogAccounts = true;
     },
 
     async startService(netName) {
@@ -1487,6 +1509,19 @@ export default {
 <style>
 @import "~bootstrap/dist/css/bootstrap.min.css";
 
+.btn-primary {
+  background-color: #336699;
+  border-color: #336699;
+}
+.btn-primary:disabled {
+  background-color: #6699cc;
+  border-color: #6699cc;
+}
+
+.navbar-brand {
+  text-shadow: #000 1px 1px 1px;
+}
+
 body {
   background: #333;
   color: white;
@@ -1557,6 +1592,7 @@ div.chart-wrapper {
 .vpntable th {
   text-align: center;
 }
+
 .vpntable tr td {
   padding: 3px;
   margin: 0px;
