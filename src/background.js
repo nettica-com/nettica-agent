@@ -14,12 +14,14 @@ import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 import authService from "./services/auth-service";
 import windowStateKeeper from "electron-window-state";
+
 const fs = require("fs");
 const path = require("path");
 const fileWatcher = require("chokidar");
 const os = require("os");
 const { Notification } = require("electron");
 const { autoUpdater } = require("electron-updater");
+const si = require("systeminformation");
 
 var icon = path.join(__static, "./nettica.png");
 var tray;
@@ -143,6 +145,26 @@ if (os.platform == "win32") {
   });
 }
 
+ipcMain.handle("hostname", async () => {
+  try {
+    const sysInfo = await si.osInfo();
+    return sysInfo.hostname;
+  } catch (error) {
+    console.error("Error getting system information:", error);
+    return null;
+  }
+});
+
+ipcMain.handle("description", async () => {
+  try {
+    const sysInfo = await si.system();
+    return sysInfo.model;
+  } catch (error) {
+    console.error("Error getting system information:", error);
+    return null;
+  }
+});
+
 ipcMain.handle("logout", (event) => {
   console.log("*** logout received ***");
   const win = new BrowserWindow({
@@ -164,6 +186,11 @@ ipcMain.handle("logout", (event) => {
   console.log(" *** logged out ***");
 
   event.returnValue = "logged out";
+});
+
+ipcMain.on("quit-app", () => {
+  app.quit();
+  app.exit(0);
 });
 
 // Scheme must be registered before the app is ready

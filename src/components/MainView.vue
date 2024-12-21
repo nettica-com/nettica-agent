@@ -35,13 +35,19 @@
       class="pt-3 pb-3"
     >
       <div style="display: flex; align-items: center; flex-wrap: nowrap">
-        <v-label
-          :key="index"
+        <a
+          :href="item.device.server"
+          @click.prevent="openExternal(item.device.server)"
           class="pt-5 pb-5 pr-5 pl-5"
-          style="font-size: 18px; font-family: Roboto"
-          v-model="item.name"
-          >{{ item.name }}</v-label
+          style="
+            font-size: 18px;
+            font-family: Roboto;
+            color: white;
+            text-decoration: none;
+          "
         >
+          {{ item.name }}
+        </a>
         <div style="flex-grow: 1; margin-left: auto"></div>
         <button
           class="btn btn-primary mr-2 my-2 my-sm-0"
@@ -51,7 +57,7 @@
           <v-icon title="Settings" dark> mdi-cog-outline </v-icon>
         </button>
         <button
-          :disabled="addNetDisabled"
+          :disabled="!item.logged_in"
           @click="startCreate(item)"
           class="btn btn-primary mr-2 my-2 my-sm-0"
         >
@@ -63,15 +69,16 @@
           />
         </button>
         <button
-          :hidden="true"
-          @click="startAccount(item)"
+          :disabled="!item.logged_in"
+          @click="startMembers(item)"
           class="btn btn-primary mr-2 my-2 my-sm-0"
         >
-          <v-icon title="Account" dark> mdi-people </v-icon>
-          />
+          <v-icon title="Account" dark> mdi-account-group </v-icon>
         </button>
         <button :class="item.class" @click="login(item)" type="button">
-          <v-icon :title="loginText" dark> mdi-lock </v-icon>
+          <v-icon :title="item.logged_in ? 'Logout' : 'Login'" dark>
+            mdi-lock
+          </v-icon>
         </button>
         &nbsp;&nbsp;
       </div>
@@ -318,6 +325,192 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="dialogMembers" max-width="550">
+      <v-card>
+        <v-card-title class="headline">Account</v-card-title>
+        <v-card-text>
+          <v-row>
+            <v-col cols="12">
+              <h3>{{ savedAccount.accountName }}</h3>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="12">
+              <v-list>
+                <v-list-item
+                  v-for="(member, index) in members"
+                  :key="index"
+                  class="flex-container"
+                  @click="startEditMember(member)"
+                >
+                  <v-icon>mdi-account</v-icon>
+                  <div class="table-container">
+                    <table>
+                      <tr>
+                        <td>
+                          <v-label
+                            :key="index"
+                            class="pt-5 pb-0 pr-5 pl-5"
+                            style="font-size: 18px; font-family: Roboto"
+                            v-model="member.name"
+                            >{{ member.name }}</v-label
+                          >
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <v-label
+                            class="pt-0 pb-5 pr-5 pl-5"
+                            style="font-size: 12px; font-family: Roboto"
+                            v-model="member.email"
+                          >
+                            {{ member.email }}</v-label
+                          >
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                </v-list-item>
+              </v-list>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="success" @click="startInviteMember">
+            Invite
+            <v-icon right dark>mdi-account-plus</v-icon>
+          </v-btn>
+          <v-btn color="primary" @click="dialogMembers = false">
+            Close
+            <v-icon right dark>mdi-close-circle-outline</v-icon>
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="dialogEditMember" max-width="550">
+      <v-card>
+        <v-card-title class="headline">Edit Member</v-card-title>
+        <v-card-text>
+          <v-row>
+            <v-col cols="12">
+              <v-form ref="form" v-model="valid">
+                <v-text-field
+                  v-if="editMember.role === 'Owner'"
+                  v-model="editMember.accountName"
+                  label="Company"
+                  :rules="[(v) => !!v || 'Company is required']"
+                  required
+                />
+                <v-text-field
+                  v-model="editMember.name"
+                  label="Name"
+                  :rules="[(v) => !!v || 'Name is required']"
+                  required
+                />
+                <v-text-field
+                  v-model="editMember.email"
+                  label="Email"
+                  :rules="[rules.email]"
+                  readonly
+                  required
+                />
+                <v-select
+                  v-if="editMember.role != 'Owner'"
+                  v-model="editMember.role"
+                  :items="roles"
+                  label="Role"
+                  :rules="[(v) => !!v || 'Role is required']"
+                  required
+                />
+                <v-select
+                  v-if="editMember.role != 'Owner'"
+                  v-model="editMember.status"
+                  :items="statuses"
+                  label="Status"
+                  :rules="[(v) => !!v || 'Status is required']"
+                  required
+                />
+              </v-form>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn
+            v-if="editMember.role !== 'Owner'"
+            color="red"
+            @click="deleteMember(editMember)"
+          >
+            Delete
+            <v-icon right dark>mdi-delete-outline</v-icon>
+          </v-btn>
+          <v-spacer />
+          <v-btn
+            :disabled="!valid"
+            color="success"
+            @click="saveMember(editMember)"
+          >
+            Save
+            <v-icon right dark>mdi-check-outline</v-icon>
+          </v-btn>
+          <v-btn color="primary" @click="dialogEditMember = false">
+            Cancel
+            <v-icon right dark>mdi-close-circle-outline</v-icon>
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="dialogInviteMember" max-width="550">
+      <v-card>
+        <v-card-title class="headline">Invite New Member</v-card-title>
+        <v-card-text>
+          <v-row>
+            <v-col cols="12">
+              <v-form ref="form" v-model="valid">
+                <v-text-field
+                  v-model="newMember.name"
+                  label="Name"
+                  :rules="[(v) => !!v || 'Name is required']"
+                  required
+                />
+                <v-text-field
+                  v-model="newMember.email"
+                  label="Email"
+                  :rules="[rules.email]"
+                  required
+                />
+                <v-select
+                  v-model="newMember.role"
+                  :items="roles"
+                  label="Role"
+                  :rules="[(v) => !!v || 'Role is required']"
+                  required
+                />
+                <v-switch
+                  v-model="newMember.sendEmail"
+                  label="Send Email Invite"
+                />
+              </v-form>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            :disabled="!valid"
+            color="success"
+            @click="addMember(newMember)"
+          >
+            Invite
+            <v-icon right dark>mdi-check-outline</v-icon>
+          </v-btn>
+          <v-btn color="primary" @click="dialogInviteMember = false">
+            Cancel
+            <v-icon right dark>mdi-close-circle-outline</v-icon>
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <v-dialog v-model="dialogServer" max-width="550">
       <v-card>
         <v-card-title class="headline">Add Server</v-card-title>
@@ -441,6 +634,37 @@
         </v-card-text>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="dialogConfirmDelete" max-width="550">
+      <v-card>
+        <v-card-title class="headline">Confirm Delete</v-card-title>
+        <v-card-text>
+          <v-row>
+            <v-col cols="12">
+              <v-checkbox
+                v-model="hardDelete"
+                label="Delete from server"
+              ></v-checkbox>
+              <p>
+                Are you sure you want to delete this device? Deleting the device
+                will also disconnect any running VPNs, log you out and exit the
+                application.
+              </p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="red" @click="confirmDelete">
+            Delete
+            <v-icon right dark>mdi-delete-outline</v-icon>
+          </v-btn>
+          <v-btn color="primary" @click="dialogConfirmDelete = false">
+            Cancel
+            <v-icon right dark>mdi-close-circle-outline</v-icon>
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 <script>
@@ -517,16 +741,17 @@ export default {
       { text: "Endpoint", value: "current.endpoint" },
       { text: "Actions", value: "action", sortable: false },
     ],
-    loginText: "Login",
     device: {
       server: "https://my.nettica.com",
       appData: appData,
-      name: os.hostname(),
+      name: os.hostname().toLowerCase(),
+      description: "",
       ezcode: "",
       id: "",
       logging: "",
       apiKey: "",
       instanceid: "",
+      registered: false,
       os: os.platform(),
       arch: os.arch(),
     },
@@ -548,8 +773,28 @@ export default {
         hasRDP: false,
       },
     },
+    newMember: {
+      name: "",
+      email: "",
+      role: "",
+      sendEmail: false,
+    },
+    editMember: {
+      name: "",
+      email: "",
+      role: "",
+      status: "",
+      accountName: "",
+    },
+    dialogMembers: false,
+    dialogEditMember: false,
+    dialogInviteMember: false,
+    hardDelete: false,
+    dialogConfirmDelete: false,
+    roles: ["Admin", "User"],
+    statuses: ["Active", "Pending"],
     netName: "",
-    accounts: [],
+    members: [],
     myNets: [],
     netList: {},
     myAccounts: [],
@@ -576,8 +821,9 @@ export default {
     server: "",
     servers: [],
     savedItem: null,
+    savedAccount: { accountName: "" },
     deviceId: "",
-    deviceName: os.hostname(),
+    deviceName: os.hostname().toLowerCase(),
     apiKey: "",
     oneHour: 0,
     valid: false,
@@ -699,11 +945,19 @@ export default {
       if (this.servers != null) {
         for (let i = 0; i < this.servers.length; i++) {
           for (let j = 0; j < args.length; j++) {
-            if (this.servers[i].name == args[j].name) {
+            if (this.servers[i].device.server == args[j].device.server) {
+              console.log(
+                "handle-servers found server ",
+                this.servers[i].name,
+                this.servers[i]
+              );
               args[j].accessToken = this.servers[i].accessToken;
               args[j].class = this.servers[i].class;
+              args[j].logged_in = this.servers[i].logged_in;
+
               if (args[j].class == null || args[j].class == "") {
                 args[j].class = "btn btn-danger";
+                args[j].logged_in = false;
               }
             }
           }
@@ -711,6 +965,7 @@ export default {
       }
       this.servers = null;
       this.servers = args;
+      console.log("handle-servers servers = ", this.servers);
 
       // find the local host in a net and set the enable flag on the net
       for (let x = 0; x < this.servers.length; x++) {
@@ -720,6 +975,9 @@ export default {
         );
         if (this.servers[x].class == null) {
           this.servers[x].class = "btn btn-danger";
+        }
+        if (this.servers[x].logged_in == null) {
+          this.servers[x].logged_in = false;
         }
         if (this.servers[x].config == null) {
           this.servers[x].config = [];
@@ -741,6 +999,24 @@ export default {
       console.log("on authenticated", args);
       this.savedItem.accessToken = args;
       this.savedItem.class = "btn btn-success";
+      this.savedItem.logged_in = true;
+      console.log("on authenticated - savedItem = ", this.savedItem);
+
+      if (this.savedItem.device.registered == false) {
+        this.discoverDevice(this.savedItem);
+      }
+
+      for (let i = 0; i < this.servers.length; i++) {
+        if (this.servers[i].device.server == this.savedItem.device.server) {
+          console.log("found server ", this.servers[i].name);
+          this.servers[i].accessToken = args;
+          this.servers[i].class = "btn btn-success";
+          this.servers[i].logged_in = true;
+          break;
+        }
+      }
+
+      this.$forceUpdate();
     });
     ipcRenderer.on("update-available", (event, args) => {
       console.log("update-available", args);
@@ -798,8 +1074,13 @@ export default {
       if (this.oneHour > (60 * 60) / 5) {
         // no longer authenticated
         console.log("No longer authenticated");
-        this.loginText = "Login";
-        this.logged_in = false;
+        for (let i = 0; i < this.servers.length; i++) {
+          if (this.servers[i].logged_in) {
+            this.servers[i].class = "btn btn-danger";
+            this.servers[i].logged_in = false;
+            this.servers[i].accessToken = null;
+          }
+        }
 
         this.oneHour = 0;
       }
@@ -815,7 +1096,9 @@ export default {
   },
   methods: {
     async logout(item) {
-      this.loginText = "Login";
+      item.logged_in = false;
+      item.class = "btn btn-danger";
+      item.accessToken = null;
 
       this.callLogout(item.device.server);
       console.log("logout - after callLogout");
@@ -829,20 +1112,22 @@ export default {
             "authenticate",
             item.device.server
           );
-          console.log("login - accessToken = ", item.accessToken);
-          item.class = "btn btn-success";
-          this.savedItem = item;
-          this.loginText = "Logout";
-          this.logged_in = true;
-          this.$forceUpdate();
+
+          console.log("login - item.accessToken = ", item.accessToken);
+
+          if (item.accessToken != null) {
+            item.class = "btn btn-success";
+            item.logged_in = true;
+            this.savedItem = item;
+            this.$forceUpdate();
+          }
         } catch (e) {
           console.log("login - error = ", e);
         }
       } else {
         item.class = "btn btn-danger";
+        item.logged_in = false;
         console.log("logout - accessToken = ", item.accessToken);
-        this.loginText = "Login";
-        this.logged_in = false;
         this.logout(item);
         item.accessToken = null;
         this.$forceUpdate();
@@ -993,13 +1278,38 @@ export default {
       this.dialogCreate = true;
     },
 
-    async startAccount(item) {
+    async startMembers(item) {
       this.device = item.device;
       this.savedItem = item;
 
       await this.getAccountsList(item);
 
-      this.dialogAccounts = true;
+      for (let i = 0; i < this.myAccounts.length; i++) {
+        if (this.myAccounts[i].parent == this.myAccounts[i].id) {
+          this.savedAccount = this.myAccounts[i];
+          console.log("savedAccount = ", this.savedAccount);
+          await this.getMembers(item, this.myAccounts[i]);
+          break;
+        }
+      }
+
+      this.dialogMembers = true;
+    },
+
+    async startEditMember(item) {
+      this.editMember = item;
+      this.dialogEditMember = true;
+    },
+
+    async startInviteMember() {
+      this.newMember = {
+        name: "",
+        email: "",
+        role: "User",
+        sendEmail: false,
+        parent: this.savedAccount.id,
+      };
+      this.dialogInviteMember = true;
     },
 
     async startService(netName) {
@@ -1155,7 +1465,7 @@ export default {
       }
       this.dialogServer = true;
     },
-    createServer() {
+    async createServer() {
       console.log("Create Server: ", this.server);
 
       if (this.server == "") {
@@ -1168,28 +1478,34 @@ export default {
         }
       }
 
+      // get the description from the main process
+
       var s = { device: { server: this.server, config: [] } };
       s.name = this.server.replace("https://", "");
       s.class = "btn btn-danger";
-      s.device.name = os.hostname();
+      s.device.name = os.hostname().toLowerCase();
       s.device.server = this.server;
       s.device.ezcode = "";
       s.device.id = "";
       s.device.apiKey = "";
       s.device.instanceid = "";
       s.device.enable = true;
+      s.device.registered = false;
+      s.device.description = await ipcRenderer.invoke("description");
+      s.device.os = os.platform();
 
       this.servers.push(s);
       this.dialogServer = false;
     },
 
-    createVPN(vpn) {
+    async createVPN(vpn) {
       let item = this.savedItem;
       let accessToken = item.accessToken;
       console.log("createVPN accessToken = ", accessToken);
 
       if (item.device.id == "") {
-        item.device.name = os.hostname();
+        item.device.name = os.hostname().toLowerCase();
+        item.device.description = await ipcRenderer.invoke("description");
         item.device.accountid = vpn.accountid;
         axios
           .post(item.device.server + "/api/v1.0/device", item.device, {
@@ -1270,6 +1586,203 @@ export default {
             if (error) console.error(error);
           });
       });
+    },
+
+    async discoverDevice(item) {
+      console.log("discoverDevice", item);
+
+      let devices = await this.getDevices(item);
+      console.log("item = ", item);
+      console.log("devices = ", devices);
+
+      let found = false;
+
+      for (let i = 0; i < devices.length; i++) {
+        if (devices[i].name.toLowerCase() == os.hostname().toLowerCase()) {
+          item.device = devices[i];
+          found = true;
+          break;
+        }
+      }
+
+      if (found) {
+        for (let i = 0; i < this.servers.length; i++) {
+          if (this.servers[i].device.server == item.device.server) {
+            this.servers[i].device = item.device;
+            this.servers[i].accessToken = item.accessToken;
+            this.servers[i].class = "btn btn-success";
+            this.servers[i].logged_in = true;
+            var temp = this.servers;
+            this.servers = null;
+            this.servers = temp;
+            break;
+          }
+        }
+        await this.saveSettings(item.device);
+        this.$forceUpdate();
+        console.log("this.servers = ", this.servers);
+      } else {
+        console.log("Device not found on the server");
+      }
+    },
+
+    async getDevices(item) {
+      return new Promise((resolve, reject) => {
+        let accessToken = item.accessToken;
+        console.log("getDevices accessToken = ", accessToken);
+        if (!accessToken) return reject(new Error("no access token available"));
+        axios
+          .get(item.device.server + "/api/v1.0/device", {
+            headers: {
+              Authorization: "Bearer " + accessToken,
+            },
+          })
+          .then((response) => {
+            console.log("devices = ", response.data);
+            resolve(response.data);
+          })
+          .catch((error) => {
+            if (error) console.error(error);
+          });
+      });
+    },
+
+    async getMembers(item, account) {
+      return new Promise((resolve, reject) => {
+        let accessToken = item.accessToken;
+        console.log("getMembers accessToken = ", accessToken);
+        if (!accessToken) return reject(new Error("no access token available"));
+        axios
+          .get(
+            item.device.server + "/api/v1.0/accounts/" + account.id + "/users",
+            {
+              headers: {
+                Authorization: "Bearer " + accessToken,
+              },
+            }
+          )
+          .then((response) => {
+            this.members = response.data;
+            resolve();
+          })
+          .catch((error) => {
+            if (error) console.error(error);
+            reject(error);
+          });
+      });
+    },
+
+    async saveMember(member) {
+      let item = this.savedItem;
+      let accessToken = item.accessToken;
+      console.log("saveMember accessToken = ", accessToken);
+
+      if (!accessToken) return new Error("no access token available");
+
+      member.accoutnName = this.savedAccount.accountName;
+
+      console.log("saveMember member = ", member);
+
+      axios
+        .patch(item.device.server + "/api/v1.0/accounts/" + member.id, member, {
+          headers: {
+            Authorization: "Bearer " + accessToken,
+          },
+        })
+        .then(() => {
+          this.dialogInviteMember = false;
+          this.getMembers(this.savedItem, this.savedAccount);
+        })
+        .catch((error) => {
+          if (error) console.error(error);
+        });
+    },
+
+    async deleteMember(member) {
+      let item = this.savedItem;
+      let accessToken = item.accessToken;
+      console.log("deleteMember accessToken = ", accessToken);
+      console.log("deleteMember member = ", member);
+
+      if (!accessToken) return new Error("no access token available");
+
+      axios
+        .delete(item.device.server + "/api/v1.0/accounts/" + member.id, {
+          headers: {
+            Authorization: "Bearer " + accessToken,
+          },
+        })
+        .then(() => {
+          this.dialogEditMember = false;
+          this.getMembers(this.savedItem, this.savedAccount);
+        })
+        .catch((error) => {
+          if (error) console.error(error);
+        });
+    },
+
+    async addMember(member) {
+      let item = this.savedItem;
+      let accessToken = item.accessToken;
+      console.log("addMember accessToken = ", accessToken);
+      if (!accessToken) return new Error("no access token available");
+
+      member.accountName = this.savedAccount.accountName;
+
+      if (member.sendEmail) {
+        member.status = "Pending";
+      } else {
+        member.status = "Active";
+      }
+      member.parent = this.savedAccount.id;
+
+      console.log("addMember member = ", member);
+
+      axios
+        .post(item.device.server + "/api/v1.0/accounts/", member, {
+          headers: {
+            Authorization: "Bearer " + accessToken,
+          },
+        })
+        .then(async (m) => {
+          if (member.sendEmail) {
+            await this.inviteMember(m.data);
+          } else {
+            alert(member.name + " added successfully.");
+          }
+
+          this.getMembers(this.savedItem, this.savedAccount);
+          this.dialogInviteMember = false;
+        })
+        .catch((error) => {
+          if (error) console.error(error);
+        });
+    },
+
+    async inviteMember(member) {
+      let item = this.savedItem;
+      let accessToken = item.accessToken;
+      console.log("inviteMember accessToken = ", accessToken);
+      console.log("inviteMember member = ", member);
+      if (!accessToken) return new Error("no access token available");
+
+      axios
+        .get(
+          item.device.server + "/api/v1.0/accounts/" + member.id + "/invite",
+          {
+            headers: {
+              Authorization: "Bearer " + accessToken,
+            },
+          }
+        )
+        .then(() => {
+          alert("Email invitation sent to " + member.email);
+          this.dialogInviteMember = false;
+          this.getMembers(this.savedItem, this.savedAccount);
+        })
+        .catch((error) => {
+          if (error) console.error(error);
+        });
     },
     async getNetList(item) {
       return new Promise((resolve, reject) => {
@@ -1387,26 +1900,34 @@ export default {
       this.dialogSettings = true;
     },
     deleteSettings() {
-      if (
-        confirm(
-          `Do you really want to delete this device ${this.device.name}?  This will also remove this server ${this.device.server} as well as VPNs associated with it.`
-        )
-      ) {
-        axios
-          .delete("http://127.0.0.1:53280/device/" + this.device.id, {
-            headers: {},
-          })
-          .then(() => {
-            console.log("deleteSettings - after delete");
-            this.dialogSettings = false;
-          });
-      } else {
-        this.dialogSettings = false;
+      this.dialogConfirmDelete = true;
+    },
+    confirmDelete() {
+      let softDelete = "";
+
+      if (!this.hardDelete) {
+        softDelete = "/soft";
       }
+
+      axios
+        .delete(
+          "http://127.0.0.1:53280/device/" + this.device.id + softDelete,
+          {
+            headers: {},
+          }
+        )
+        .then(() => {
+          console.log("deleteSettings - after delete");
+          this.dialogSettings = false;
+        });
+
+      this.logout(this.savedItem);
+      ipcRenderer.send("quit-app");
     },
 
     async saveSettings(device) {
       this.dialogSettings = false;
+      console.log("Save Settings: ", device);
 
       axios
         .get(
@@ -1434,6 +1955,29 @@ export default {
           console.log("Save Settings response = ", response);
         });
     },
+
+    async openExternal(url) {
+      console.log("openExternal: ", url);
+      if (os.platform == "win32") {
+        spawn("start", [url], {
+          detached: true,
+          shell: true,
+        });
+      }
+      if (os.platform == "linux") {
+        spawn("open", [url], {
+          detached: true,
+          shell: false,
+        });
+      }
+      if (os.platform == "darwin") {
+        spawn("open", [url], {
+          detached: true,
+          shell: false,
+        });
+      }
+    },
+
     launchNettica() {
       console.log("launchNettica");
       if (os.platform == "win32") {
@@ -1576,6 +2120,12 @@ h4 {
   font-size: 18px;
 }
 
+h3 {
+  justify-content: center;
+  margin: 0px;
+  display: flex;
+}
+
 div.chart-wrapper {
   align-items: left;
   padding: 10px;
@@ -1598,5 +2148,19 @@ div.chart-wrapper {
   margin: 0px;
   border: 0px;
   height: 40px;
+}
+
+.flex-container {
+  display: flex;
+  align-items: center; /* Center vertically */
+  border: 1px solid #444;
+}
+
+.icon {
+  margin-right: 16px; /* Adjust the spacing as needed */
+}
+
+.table-container {
+  flex-grow: 1; /* Allow the table to take up the remaining space */
 }
 </style>

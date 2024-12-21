@@ -3,7 +3,7 @@
   "productName": "Nettica Agent",
   "author": "nettica.com <support@nettica.com> https://nettica.com",
   "description": "Nettica Agent",
-  "version": "3.2.6",
+  "version": "3.3.0",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
@@ -34,6 +34,7 @@
     "path": "^0.12.7",
     "request": "^2.88.2",
     "roboto-fontface": "*",
+    "systeminformation": "^5.23.14",
     "url": "^0.11.0",
     "vue": "^2.6.14",
     "vue-apexcharts": "^1.6.2",
