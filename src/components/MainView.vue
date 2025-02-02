@@ -693,7 +693,7 @@ let xPath = null;
 let NetticaServersPath = appData + "\\nettica\\";
 
 if (os.platform() == "linux") {
-  xPath = `"/opt/Nettica Agent/nettica.agent" --no-sandbox %U`; // have to fix it up because of the space in the path, add the --no-sandbox for new versions of linux
+  xPath = `/opt/Nettica\\ Agent/nettica.agent`; // must have this exactly as it is in order to properly fix the bug in AutoLauncher
   NetticaServersPath = "/etc/nettica/";
 }
 
@@ -1999,11 +1999,29 @@ export default {
         });
       }
     },
-    setAutoLaunch() {
+    async setAutoLaunch() {
       if (this.autoLaunch) {
-        autoLauncher.enable();
+        await autoLauncher.enable();
+        // autoLauncher can't properly create the desktop file on linux,
+        // so copy it from /usr/share/applications because it's correct there
+        if (os.platform() == "linux") {
+          const src = "/usr/share/applications/nettica.agent.desktop";
+          const dest = `${os.homedir()}/.config/autostart/nettica.agent.desktop`;
+          const autostartDir = `${os.homedir()}/.config/autostart`;
+          if (!fs.existsSync(autostartDir)) {
+            fs.mkdirSync(autostartDir, { recursive: true });
+          }
+          fs.copyFile(src, dest, (err) => {
+            if (err) {
+              console.error("Error copying file:", err);
+            } else {
+              console.log("File copied to autostart directory");
+            }
+          });
+        }
       } else {
         autoLauncher.disable();
+        // we don't need to remove the file if linux, autoLauncher can manage that
       }
     },
     loadNetwork(config) {

@@ -28,9 +28,9 @@
       "deb",
       "rpm"
     ],
-    "desktop": {
-      "Exec": "\"/opt/Nettica Agent/nettica.agent\" --no-sandbox %U"
-    }
+    "executableArgs": [
+      "--no-sandbox"
+    ]
   },
 
   "win": {
