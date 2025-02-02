@@ -693,7 +693,7 @@ let xPath = null;
 let NetticaServersPath = appData + "\\nettica\\";
 
 if (os.platform() == "linux") {
-  xPath = `/opt/Nettica\\ Agent/nettica.agent`; // have to fix it up because of the space in the path
+  xPath = `"/opt/Nettica Agent/nettica.agent" --no-sandbox %U`; // have to fix it up because of the space in the path, add the --no-sandbox for new versions of linux
   NetticaServersPath = "/etc/nettica/";
 }
 
