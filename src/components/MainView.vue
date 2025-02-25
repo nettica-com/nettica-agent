@@ -1492,7 +1492,9 @@ export default {
         .catch((error) => {
           if (error) {
             console.log("Error = ", error);
-            alert("Invalid server. This version of Nettica Agent supports multiple servers (eg, Enterprise customers).  Click the login button, and then click Join Network to add this device to your service.");
+            alert(
+              "Invalid server. This version of Nettica Agent supports multiple servers (eg, Enterprise customers).  Click the login button, and then click Join Network to add this device to your service."
+            );
             this.dialogServer = false;
             return;
           }
