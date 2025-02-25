@@ -1469,11 +1469,38 @@ export default {
       console.log("Create Server: ", this.server);
 
       if (this.server == "") {
+        this.dialogServer = false;
         return;
       }
 
+      // check to see if the server is valid
+      // https://server/api/v1.0/auth/oauth2_url
+
+      this.server = this.server.trim();
+      // remove the trailing slash if it is there
+      if (this.server[this.server.length - 1] == "/") {
+        this.server = this.server.substring(0, this.server.length - 1);
+      }
+
+      await axios
+        .get(this.server + "/api/v1.0/auth/oauth2_url", {
+          headers: {},
+        })
+        .then((response) => {
+          console.log("response = ", response);
+        })
+        .catch((error) => {
+          if (error) {
+            console.log("Error = ", error);
+            alert("Invalid server. This version of Nettica Agent supports multiple servers (eg, Enterprise customers).  Click the login button, and then click Join Network to add this device to your service.");
+            this.dialogServer = false;
+            return;
+          }
+        });
+
       for (let i = 0; i < this.servers.length; i++) {
         if (this.servers[i].device.server == this.server) {
+          this.dialogServer = false;
           return;
         }
       }
