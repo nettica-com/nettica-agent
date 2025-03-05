@@ -1468,6 +1468,7 @@ export default {
     async createServer() {
       console.log("Create Server: ", this.server);
 
+      var success = false;
       if (this.server == "") {
         this.dialogServer = false;
         return;
@@ -1488,6 +1489,7 @@ export default {
         })
         .then((response) => {
           console.log("response = ", response);
+          success = true;
         })
         .catch((error) => {
           if (error) {
@@ -1507,10 +1509,18 @@ export default {
         }
       }
 
-      // get the description from the main process
+      // ensure the server does not get added if the call failed
+      if (!success) {
+        this.dialogServer = false;
+        return;
+      }
 
+      // get the description from the main process
       var s = { device: { server: this.server, config: [] } };
-      s.name = this.server.replace("https://", "");
+      var name = this.server.trimStart("https://");
+      name = name.trimStart("http://");
+
+      s.name = name;
       s.class = "btn btn-danger";
       s.device.name = os.hostname().toLowerCase();
       s.device.server = this.server;
