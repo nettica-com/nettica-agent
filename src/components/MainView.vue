@@ -543,6 +543,47 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="dialogMessage" max-width="550">
+      <v-card>
+        <v-card-title class="headline">Error</v-card-title>
+        <v-card-text>
+          <v-row>
+            <v-col cols="12">
+              <v-form ref="form">
+                <v-label class="pt-5 pb-0 pr-5 pl-5" style="font-size: 18px">{{
+                  message
+                }}</v-label>
+              </v-form>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="primary" @click="dialogMessage = false"> OK </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="dialogLogout" max-width="550">
+      <v-card>
+        <v-card-title class="headline">Logout</v-card-title>
+        <v-card-text>
+          <v-row>
+            <v-col cols="12">
+              <v-form ref="form">
+                <v-label class="pt-5 pb-0 pr-5 pl-5" style="font-size: 18px"
+                  >You have been logged out.</v-label
+                >
+              </v-form>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="primary" @click="dialogLogout = false"> OK </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-dialog v-model="dialogSettings" max-width="550">
       <v-card>
         <v-card-title class="headline">Settings</v-card-title>
@@ -816,6 +857,9 @@ export default {
     dialogSettings: false,
     dialogAbout: false,
     dialogServer: false,
+    dialogMessage: false,
+    dialogLogout: false,
+    message: "",
     version: version,
     autoLaunch: false,
     server: "",
@@ -1102,7 +1146,7 @@ export default {
 
       this.callLogout(item.device.server);
       console.log("logout - after callLogout");
-      alert("You have been logged out");
+      this.dialogLogout = true;
     },
     async login(item) {
       if (item.accessToken == null) {
@@ -1411,7 +1455,8 @@ export default {
       console.log("Create VPN: ", vpn);
 
       if (this.vpn.current.syncEndpoint && this.endpoint == "") {
-        alert("Endpoint is required if sync is selected");
+        this.message = "Endpoint is required if sync is selected";
+        this.dialogMessage = true;
         return;
       }
       // get a new keypair from the keystore for this host
@@ -1483,24 +1528,23 @@ export default {
         this.server = this.server.substring(0, this.server.length - 1);
       }
 
-      await axios
-        .get(this.server + "/api/v1.0/auth/oauth2_url", {
-          headers: {},
-        })
-        .then((response) => {
-          console.log("response = ", response);
-          success = true;
-        })
-        .catch((error) => {
-          if (error) {
-            console.log("Error = ", error);
-            alert(
-              "Invalid server. This version of Nettica Agent supports multiple servers (eg, Enterprise customers).  Click the login button, and then click Join Network to add this device to your service."
-            );
-            this.dialogServer = false;
-            return;
+      try {
+        const response = await axios.get(
+          this.server + "/api/v1.0/auth/oauth2_url",
+          {
+            headers: {},
           }
-        });
+        );
+        console.log("response = ", response);
+        success = true;
+      } catch (error) {
+        console.log("Error = ", error);
+        this.message =
+          "Invalid server. This version of Nettica Agent supports multiple servers (eg, Enterprise customers).  Click the login button, and then click Join Network to add this device to your service.";
+        this.dialogServer = false;
+        this.dialogMessage = true;
+        return;
+      }
 
       for (let i = 0; i < this.servers.length; i++) {
         if (this.servers[i].device.server == this.server) {
@@ -1572,7 +1616,8 @@ export default {
               .catch((error) => {
                 if (error) {
                   console.log("Error = ", error);
-                  alert(error.response.data.error);
+                  this.message = error.response.data.error;
+                  this.dialogMessage = true;
                 }
               });
           })
@@ -1593,7 +1638,8 @@ export default {
           .catch((error) => {
             if (error) {
               console.log("Error = ", error);
-              alert(error.response.data.error);
+              this.message = error.response.data.error;
+              this.dialogMessage = true;
             }
           });
       }
@@ -1623,6 +1669,7 @@ export default {
           })
           .catch((error) => {
             if (error) console.error(error);
+            reject(error);
           });
       });
     },
@@ -1682,6 +1729,7 @@ export default {
           })
           .catch((error) => {
             if (error) console.error(error);
+            reject(error);
           });
       });
     },
@@ -1787,7 +1835,7 @@ export default {
           if (member.sendEmail) {
             await this.inviteMember(m.data);
           } else {
-            alert(member.name + " added successfully.");
+            // alert(member.name + " added successfully.");
           }
 
           this.getMembers(this.savedItem, this.savedAccount);
@@ -1815,7 +1863,7 @@ export default {
           }
         )
         .then(() => {
-          alert("Email invitation sent to " + member.email);
+          // alert("Email invitation sent to " + member.email);
           this.dialogInviteMember = false;
           this.getMembers(this.savedItem, this.savedAccount);
         })
@@ -1840,6 +1888,7 @@ export default {
           })
           .catch((error) => {
             if (error) console.error(error);
+            reject(error);
           });
       });
     },
@@ -1903,6 +1952,7 @@ export default {
             if (!vpn.enable) {
               this.stopService(vpn.netName);
             }
+            reject(error);
           });
       });
     },
