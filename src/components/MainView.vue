@@ -1451,8 +1451,9 @@ export default {
       this.vpn.current.enableDns = this.myNets[selected].default.enableDns;
       console.log("updateDefaults = ", this.vpn, this.myNets[selected]);
     },
-    create(vpn) {
+    async create(vpn) {
       console.log("Create VPN: ", vpn);
+      var publicKey = "";
 
       if (this.vpn.current.syncEndpoint && this.endpoint == "") {
         this.message = "Endpoint is required if sync is selected";
@@ -1461,12 +1462,11 @@ export default {
       }
       // get a new keypair from the keystore for this host
       try {
-        axios
+        await axios
           .get("http://127.0.0.1:53280/keys/", { headers: {} })
           .then((response) => {
             console.log("Public Key = ", response.data);
-            vpn.current.publicKey = response.data.Public;
-            vpn.current.privateKey = "";
+            publicKey = response.data.Public;
           });
       } catch (e) {
         console.log("Error getting keypair: ", e);
@@ -1493,13 +1493,14 @@ export default {
         let parts = this.vpn.current.endpoint.split(":");
         this.vpn.current.listenPort = parseInt(parts[parts.length - 1], 10);
       }
+      this.vpn.current.publicKey = publicKey;
       this.vpn.netName = net.netName;
       this.vpn.accountid = net.accountid;
       this.vpn.netid = net.id;
       this.vpn.deviceid = this.device.id;
       this.dialogCreate = false;
       console.log("createVPN vpn = ", this.vpn);
-      this.createVPN(vpn);
+      this.createVPN(this.vpn);
     },
     addServer() {
       console.log("Add Server");
@@ -1590,6 +1591,7 @@ export default {
         item.device.name = os.hostname().toLowerCase();
         item.device.description = await ipcRenderer.invoke("description");
         item.device.accountid = vpn.accountid;
+        item.device.updateKeys = true;
         axios
           .post(item.device.server + "/api/v1.0/device", item.device, {
             headers: {
