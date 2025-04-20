@@ -117,16 +117,17 @@ uclient.bind(PORT, UCAST_ADDR);
 
 let server;
 // handle messages from renderer
-ipcMain.on("authenticate", (event, arg) => {
+ipcMain.on("authenticate", async (event, arg) => {
   console.log(arg);
   server = arg;
   try {
-    createAuthWindow(true);
+    const accessToken = await createAuthWindow(true);
+    event.returnValue = accessToken;
   } catch (err) {
     console.error("Error creating Auth Window : ", err);
   }
 
-  event.returnValue = authService.getAccessToken();
+  //  event.returnValue = authService.getAccessToken();
 });
 
 ipcMain.on("accessToken", (event) => {
@@ -231,64 +232,82 @@ async function createWindow() {
 let authWindow;
 
 async function createAuthWindow(login) {
-  destroyAuthWin();
+  return new Promise(async (resolve, reject) => {
+    try {
+      destroyAuthWin();
 
-  // Create the browser window.
-  authWindow = new BrowserWindow({
-    width: 600,
-    height: 1000,
-    autoHideMenuBar: true,
-    icon: icon,
-    webPreferences: {
-      nodeIntegration: true,
-    },
-  });
-  authWindow.setTitle("Authentication");
-  authWindow.setIcon(icon);
+      // Create the browser window.
+      authWindow = new BrowserWindow({
+        width: 600,
+        height: 1000,
+        autoHideMenuBar: true,
+        icon: icon,
+        webPreferences: {
+          nodeIntegration: true,
+        },
+      });
+      authWindow.setTitle("Authentication");
+      authWindow.setIcon(icon);
 
-  if (!login) {
-    authWindow.loadURL(
-      server +
-        "/api/v1.0/auth/logout?redirect_uri=com.nettica.agent://callback/agent"
-    );
-  } else {
-    let codeUrl;
-    await authService.getAuthenticationURL(server).then((rsp) => {
-      console.log("rsp.codeUrl = ", rsp.codeUrl);
-      codeUrl = rsp.codeUrl;
-      if (!codeUrl.includes("client_id")) {
-        codeUrl = codeUrl + "&client_id=" + rsp.clientId;
+      if (!login) {
+        authWindow.loadURL(
+          server +
+            "/api/v1.0/auth/logout?redirect_uri=com.nettica.agent://callback/agent"
+        );
+      } else {
+        let codeUrl;
+        await authService.getAuthenticationURL(server).then((rsp) => {
+          console.log("rsp.codeUrl = ", rsp.codeUrl);
+          codeUrl = rsp.codeUrl;
+          if (!codeUrl.includes("client_id")) {
+            codeUrl = codeUrl + "&client_id=" + rsp.clientId;
+          }
+        });
+        console.log("codeUrl = ", codeUrl);
+        authWindow.loadURL(codeUrl);
       }
-    });
-    console.log("codeUrl = ", codeUrl);
-    authWindow.loadURL(codeUrl);
-  }
 
-  const {
-    session: { webRequest },
-  } = authWindow.webContents;
+      const {
+        session: { webRequest },
+      } = authWindow.webContents;
 
-  const filter = {
-    //    urls: ["com.nettica.agent://callback/agent*", "https://dev.nettica.com/*"],
-    urls: ["com.nettica.agent://callback/agent*", server + "/*code=*"],
-  };
+      const filter = {
+        //    urls: ["com.nettica.agent://callback/agent*", "https://dev.nettica.com/*"],
+        urls: ["com.nettica.agent://callback/agent*", server + "/*code=*"],
+      };
 
-  webRequest.onBeforeRequest(filter, async ({ url }) => {
-    console.log("onBeforeRequest url = ", url);
-    if (url.includes("com.nettica.agent://callback/agent/logout")) {
-      console.log("*** logout ***");
-      return destroyAuthWin();
+      webRequest.onBeforeRequest(filter, async ({ url }) => {
+        console.log("onBeforeRequest url = ", url);
+        if (url.includes("com.nettica.agent://callback/agent/logout")) {
+          console.log("*** logout ***");
+          destroyAuthWin();
+          reject(new Error("User logged out"));
+          return;
+        }
+        try {
+          await authService.loadNetticaTokens(url);
+          resolve(authService.getAccessToken());
+        } catch (err) {
+          console.error("Error loading tokens: ", err);
+          reject(err);
+        } finally {
+          destroyAuthWin();
+        }
+      });
+
+      authWindow.on("authenticated", () => {
+        resolve(authService.getAccessToken());
+        destroyAuthWin();
+      });
+
+      authWindow.on("closed", () => {
+        authWindow = null;
+        reject(new Error("Authentication window closed"));
+      });
+    } catch (error) {
+      console.error("Error creating Auth Window: ", error);
+      reject(error);
     }
-    await authService.loadNetticaTokens(url);
-    return destroyAuthWin();
-  });
-
-  authWindow.on("authenticated", () => {
-    destroyAuthWin();
-  });
-
-  authWindow.on("closed", () => {
-    authWindow = null;
   });
 }
 

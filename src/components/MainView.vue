@@ -19,13 +19,21 @@
             <span class="navbar-brand">nettica agent</span>
           </span>
           <v-spacer />
-          <button
-            class="btn btn-primary my-2 my-sm-0 mr-3"
-            icon
-            @click="addServer()"
-          >
-            <v-icon title="Add Server" dark> mdi-plus </v-icon>
-          </button>
+          <v-menu offset-y>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn icon v-bind="attrs" v-on="on">
+                <v-icon>mdi-menu</v-icon>
+              </v-btn>
+            </template>
+            <v-list>
+              <v-list-item @click="addServer()">
+                <v-list-item-icon>
+                  <v-icon>mdi-server-plus</v-icon>
+                </v-list-item-icon>
+                <v-list-item-title>Add Server</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
         </nav>
       </header>
     </div>
@@ -50,23 +58,10 @@
         </a>
         <div style="flex-grow: 1; margin-left: auto"></div>
         <button
-          class="btn btn-primary mr-2 my-2 my-sm-0"
-          icon
-          @click="startSettings(item)"
-        >
-          <v-icon title="Settings" dark> mdi-cog-outline </v-icon>
-        </button>
-        <button
-          :disabled="!item.logged_in"
           @click="startCreate(item)"
           class="btn btn-primary mr-2 my-2 my-sm-0"
         >
-          <img
-            title="Join Network"
-            :src="require('../assets/hub.svg')"
-            height="24"
-            alt="nettica"
-          />
+          <v-icon title="Join Network" dark> mdi-plus</v-icon>
         </button>
         <button
           :disabled="!item.logged_in"
@@ -74,6 +69,13 @@
           class="btn btn-primary mr-2 my-2 my-sm-0"
         >
           <v-icon title="Account" dark> mdi-account-group </v-icon>
+        </button>
+        <button
+          class="btn btn-primary mr-2 my-2 my-sm-0"
+          icon
+          @click="startSettings(item)"
+        >
+          <v-icon title="Settings" dark> mdi-cog-outline </v-icon>
         </button>
         <button :class="item.class" @click="login(item)" type="button">
           <v-icon :title="item.logged_in ? 'Logout' : 'Login'" dark>
@@ -721,7 +723,7 @@ const os = window.require("os");
 const AutoLaunch = window.require("auto-launch");
 
 // a blank console.log function to disable logging
-console.log = function () {};
+//console.log = function () {};
 
 var appData = "C:\\ProgramData";
 var { version } = pack;
@@ -1149,33 +1151,45 @@ export default {
       this.dialogLogout = true;
     },
     async login(item) {
-      if (item.accessToken == null) {
+      return new Promise((resolve, reject) => {
         try {
-          this.savedItem = item;
-          item.accessToken = await ipcRenderer.sendSync(
-            "authenticate",
-            item.device.server
-          );
+          if (item.accessToken == null) {
+            try {
+              this.savedItem = item;
+              item.accessToken = ipcRenderer.sendSync(
+                "authenticate",
+                item.device.server
+              );
 
-          console.log("login - item.accessToken = ", item.accessToken);
+              console.log("login - item.accessToken = ", item.accessToken);
 
-          if (item.accessToken != null) {
-            item.class = "btn btn-success";
-            item.logged_in = true;
-            this.savedItem = item;
+              if (item.accessToken != null) {
+                item.class = "btn btn-success";
+                item.logged_in = true;
+                this.savedItem = item;
+                this.$forceUpdate();
+                resolve(); // Resolve the promise on successful login
+              } else {
+                reject(new Error("Failed to retrieve access token")); // Reject if no access token
+              }
+            } catch (e) {
+              console.log("login - error = ", e);
+              reject(e); // Reject the promise on error
+            }
+          } else {
+            item.class = "btn btn-danger";
+            item.logged_in = false;
+            console.log("logout - accessToken = ", item.accessToken);
+            this.logout(item);
+            item.accessToken = null;
             this.$forceUpdate();
+            resolve(); // Resolve the promise after logout
           }
         } catch (e) {
           console.log("login - error = ", e);
+          reject(e);
         }
-      } else {
-        item.class = "btn btn-danger";
-        item.logged_in = false;
-        console.log("logout - accessToken = ", item.accessToken);
-        this.logout(item);
-        item.accessToken = null;
-        this.$forceUpdate();
-      }
+      });
     },
     loadQueries() {
       if (Queries) {
@@ -1274,6 +1288,27 @@ export default {
       }
     },
     async startCreate(item) {
+      console.log("startCreate %s", item);
+
+      if (item == null) {
+        console.log("startCreate - item is null");
+        return;
+      }
+
+      if (item.logged_in == null) {
+        item.logged_in = false;
+      }
+
+      if (!item.logged_in) {
+        await this.login(item);
+        item = this.savedItem;
+      }
+
+      if (!item.logged_in) {
+        console.log("startCreate - not logged in");
+        return;
+      }
+
       this.device = item.device;
       this.savedItem = item;
 
@@ -1329,12 +1364,10 @@ export default {
       await this.getAccountsList(item);
 
       for (let i = 0; i < this.myAccounts.length; i++) {
-        if (this.myAccounts[i].parent == this.myAccounts[i].id) {
-          this.savedAccount = this.myAccounts[i];
-          console.log("savedAccount = ", this.savedAccount);
-          await this.getMembers(item, this.myAccounts[i]);
-          break;
-        }
+        this.savedAccount = this.myAccounts[i];
+        console.log("savedAccount = ", this.savedAccount);
+        await this.getMembers(item, this.myAccounts[i]);
+        break;
       }
 
       this.dialogMembers = true;
@@ -1655,27 +1688,30 @@ export default {
       });
     },
     async getAccountsList(item) {
-      return new Promise((resolve, reject) => {
+      try {
         let accessToken = item.accessToken;
         console.log("getAccountsList accessToken = ", accessToken);
-        if (!accessToken) return reject(new Error("no access token available"));
-        axios
-          .get(item.device.server + "/api/v1.0/accounts/", {
-            headers: {
-              Authorization: "Bearer " + accessToken,
-            },
-          })
-          .then((response) => {
-            this.myAccounts = response.data;
-            resolve();
-          })
-          .catch((error) => {
-            if (error) console.error(error);
-            reject(error);
-          });
-      });
-    },
 
+        if (!accessToken) {
+          throw new Error("No access token available");
+        }
+
+        const response = await axios.get(
+          `${item.device.server}/api/v1.0/accounts/`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        this.myAccounts = response.data;
+        console.log("Accounts fetched successfully:", this.myAccounts);
+      } catch (error) {
+        console.error("Error fetching accounts:", error);
+        throw error; // Re-throw the error to handle it in the calling function
+      }
+    },
     async discoverDevice(item) {
       console.log("discoverDevice", item);
 
@@ -1737,28 +1773,28 @@ export default {
     },
 
     async getMembers(item, account) {
-      return new Promise((resolve, reject) => {
-        let accessToken = item.accessToken;
-        console.log("getMembers accessToken = ", accessToken);
-        if (!accessToken) return reject(new Error("no access token available"));
-        axios
-          .get(
-            item.device.server + "/api/v1.0/accounts/" + account.id + "/users",
-            {
-              headers: {
-                Authorization: "Bearer " + accessToken,
-              },
-            }
-          )
-          .then((response) => {
-            this.members = response.data;
-            resolve();
-          })
-          .catch((error) => {
-            if (error) console.error(error);
-            reject(error);
-          });
-      });
+      let accessToken = item.accessToken;
+      console.log("getMembers accessToken = ", accessToken);
+
+      if (!accessToken) {
+        throw new Error("No access token available");
+      }
+
+      try {
+        const response = await axios.get(
+          `${item.device.server}/api/v1.0/accounts/${account.parent}/users`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+        this.members = response.data;
+        console.log("Members fetched successfully:", this.members);
+      } catch (error) {
+        console.error("Error fetching members:", error);
+        throw error; // Re-throw the error to handle it in the calling function
+      }
     },
 
     async saveMember(member) {
