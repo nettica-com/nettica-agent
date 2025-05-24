@@ -723,7 +723,7 @@ const os = window.require("os");
 const AutoLaunch = window.require("auto-launch");
 
 // a blank console.log function to disable logging
-//console.log = function () {};
+console.log = function () {};
 
 var appData = "C:\\ProgramData";
 var { version } = pack;
@@ -882,6 +882,8 @@ export default {
     showDns: false,
     logged_in: false,
     timer_running: false,
+    regexIPAddress:
+      /^(\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b|\[([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\])$/,
     rules: {
       required: (value) => !!value || "Required.",
       email: (v) => /.+@.+\..+/.test(v) || "E-mail must be valid",
@@ -1560,6 +1562,15 @@ export default {
       // remove the trailing slash if it is there
       if (this.server[this.server.length - 1] == "/") {
         this.server = this.server.substring(0, this.server.length - 1);
+      }
+
+      if (!this.server.startsWith("http")) {
+        // check if the server is an IP address
+        if (this.server.match(this.regexIPAddress)) {
+          this.server = "http://" + this.server;
+        } else {
+          this.server = "https://" + this.server;
+        }
       }
 
       try {
