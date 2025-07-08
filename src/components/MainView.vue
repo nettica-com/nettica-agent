@@ -32,6 +32,12 @@
                 </v-list-item-icon>
                 <v-list-item-title>Add Server</v-list-item-title>
               </v-list-item>
+              <v-list-item @click="dialogAbout = true">
+                <v-list-item-icon>
+                  <v-icon>mdi-information</v-icon>
+                </v-list-item-icon>
+                <v-list-item-title>About</v-list-item-title>
+              </v-list-item>
             </v-list>
           </v-menu>
         </nav>
@@ -77,7 +83,7 @@
         >
           <v-icon title="Settings" dark> mdi-cog-outline </v-icon>
         </button>
-        <button :class="item.class" @click="login(item)" type="button">
+        <button :class="item.class" @click="loginWrapper(item)" type="button">
           <v-icon :title="item.logged_in ? 'Logout' : 'Login'" dark>
             mdi-lock
           </v-icon>
@@ -239,474 +245,499 @@
       </v-row>
     </div>
     <v-dialog v-model="dialogCreate" max-width="550">
-      <v-card>
-        <v-card-title class="headline">Join Network</v-card-title>
-        <v-card-text>
-          <v-row>
-            <v-col cols="12">
-              <v-form ref="form" v-model="valid">
-                <v-select
-                  return-object
-                  v-model="netList.selected"
-                  :items="netList.items"
-                  item-text="text"
-                  item-value="value"
-                  label="Join this network"
-                  :rules="[(v) => !!v || 'Network is required']"
-                  single
-                  persistent-hint
-                  required
-                  v-on:change="updateDefaults"
-                />
-                <v-text-field
-                  v-model="vpnName"
-                  label="DNS name"
-                  :rules="[rules.required, rules.host]"
-                  required
-                />
-                <v-text-field
-                  v-model="endpoint"
-                  label="Public endpoint for clients"
-                  :rules="[rules.ipport]"
-                />
-                <table width="100%">
-                  <tr>
-                    <td>
-                      <v-switch
-                        v-model="vpn.current.syncEndpoint"
-                        label="Sync Endpoint"
-                      />
-                    </td>
-                    <td>
-                      <v-switch v-model="vpn.current.hasSSH" label="SSH" />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <v-switch
-                        v-model="vpn.current.upnp"
-                        label="Enable UPnP"
-                      />
-                    </td>
-                    <td>
-                      <v-switch
-                        v-model="vpn.current.hasRDP"
-                        label="Remote Desktop"
-                      />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <v-switch
-                        v-model="vpn.current.failsafe"
-                        label="FailSafe"
-                      />
-                    </td>
-                    <td>
-                      <v-switch
-                        v-model="vpn.current.enableDns"
-                        label="Nettica DNS"
-                      />
-                    </td>
-                  </tr>
-                </table>
-              </v-form>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn :disabled="!valid" color="success" @click="create(vpn)">
-            Submit
-            <v-icon right dark>mdi-check-outline</v-icon>
-          </v-btn>
-          <v-btn color="primary" @click="dialogCreate = false">
-            Cancel
-            <v-icon right dark>mdi-close-circle-outline</v-icon>
-          </v-btn>
-        </v-card-actions>
-      </v-card>
+      <div class="border">
+        <v-card>
+          <v-card-title class="headline">Join Network</v-card-title>
+          <v-card-text>
+            <v-row>
+              <v-col cols="12">
+                <v-form ref="form" v-model="valid">
+                  <v-select
+                    return-object
+                    v-model="netList.selected"
+                    :items="netList.items"
+                    item-text="text"
+                    item-value="value"
+                    label="Join this network"
+                    :rules="[(v) => !!v || 'Network is required']"
+                    single
+                    persistent-hint
+                    required
+                    v-on:change="updateDefaults"
+                  />
+                  <v-text-field
+                    v-model="vpnName"
+                    label="DNS name"
+                    :rules="[rules.required, rules.host]"
+                    required
+                  />
+                  <v-text-field
+                    v-model="endpoint"
+                    label="Public endpoint for clients"
+                    :rules="[rules.ipport]"
+                  />
+                  <table width="100%">
+                    <tr>
+                      <td>
+                        <v-switch
+                          v-model="vpn.current.syncEndpoint"
+                          label="Sync Endpoint"
+                        />
+                      </td>
+                      <td>
+                        <v-switch v-model="vpn.current.hasSSH" label="SSH" />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <v-switch
+                          v-model="vpn.current.upnp"
+                          label="Enable UPnP"
+                        />
+                      </td>
+                      <td>
+                        <v-switch
+                          v-model="vpn.current.hasRDP"
+                          label="Remote Desktop"
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <v-switch
+                          v-model="vpn.current.failsafe"
+                          label="FailSafe"
+                        />
+                      </td>
+                      <td>
+                        <v-switch
+                          v-model="vpn.current.enableDns"
+                          label="Nettica DNS"
+                        />
+                      </td>
+                    </tr>
+                  </table>
+                </v-form>
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn :disabled="!valid" color="success" @click="create(vpn)">
+              Submit
+              <v-icon right dark>mdi-check-outline</v-icon>
+            </v-btn>
+            <v-btn color="primary" @click="dialogCreate = false">
+              Cancel
+              <v-icon right dark>mdi-close-circle-outline</v-icon>
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </div>
     </v-dialog>
     <v-dialog v-model="dialogMembers" max-width="550">
-      <v-card>
-        <v-card-title class="headline">Account</v-card-title>
-        <v-card-text>
-          <v-row>
-            <v-col cols="12">
-              <h3>{{ savedAccount.accountName }}</h3>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="12">
-              <v-list>
-                <v-list-item
-                  v-for="(member, index) in members"
-                  :key="index"
-                  class="flex-container"
-                  @click="startEditMember(member)"
-                >
-                  <v-icon>mdi-account</v-icon>
-                  <div class="table-container">
-                    <table>
-                      <tr>
-                        <td>
-                          <v-label
-                            :key="index"
-                            class="pt-5 pb-0 pr-5 pl-5"
-                            style="font-size: 18px; font-family: Roboto"
-                            v-model="member.name"
-                            >{{ member.name }}</v-label
-                          >
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <v-label
-                            class="pt-0 pb-5 pr-5 pl-5"
-                            style="font-size: 12px; font-family: Roboto"
-                            v-model="member.email"
-                          >
-                            {{ member.email }}</v-label
-                          >
-                        </td>
-                      </tr>
-                    </table>
-                  </div>
-                </v-list-item>
-              </v-list>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn color="success" @click="startInviteMember">
-            Invite
-            <v-icon right dark>mdi-account-plus</v-icon>
-          </v-btn>
-          <v-btn color="primary" @click="dialogMembers = false">
-            Close
-            <v-icon right dark>mdi-close-circle-outline</v-icon>
-          </v-btn>
-        </v-card-actions>
-      </v-card>
+      <div class="border">
+        <v-card>
+          <v-card-title class="headline">Account</v-card-title>
+          <v-card-text>
+            <v-row>
+              <v-col cols="12">
+                <h3>{{ savedAccount.accountName }}</h3>
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col cols="12">
+                <v-list>
+                  <v-list-item
+                    v-for="(member, index) in members"
+                    :key="index"
+                    class="flex-container"
+                    @click="startEditMember(member)"
+                  >
+                    <v-icon>mdi-account</v-icon>
+                    <div class="table-container">
+                      <table>
+                        <tr>
+                          <td>
+                            <v-label
+                              :key="index"
+                              class="pt-5 pb-0 pr-5 pl-5"
+                              style="font-size: 18px; font-family: Roboto"
+                              v-model="member.name"
+                              >{{ member.name }}</v-label
+                            >
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <v-label
+                              class="pt-0 pb-5 pr-5 pl-5"
+                              style="font-size: 12px; font-family: Roboto"
+                              v-model="member.email"
+                            >
+                              {{ member.email }}</v-label
+                            >
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                  </v-list-item>
+                </v-list>
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn color="success" @click="startInviteMember">
+              Invite
+              <v-icon right dark>mdi-account-plus</v-icon>
+            </v-btn>
+            <v-btn color="primary" @click="dialogMembers = false">
+              Close
+              <v-icon right dark>mdi-close-circle-outline</v-icon>
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </div>
     </v-dialog>
     <v-dialog v-model="dialogEditMember" max-width="550">
-      <v-card>
-        <v-card-title class="headline">Edit Member</v-card-title>
-        <v-card-text>
-          <v-row>
-            <v-col cols="12">
-              <v-form ref="form" v-model="valid">
-                <v-text-field
-                  v-if="editMember.role === 'Owner'"
-                  v-model="editMember.accountName"
-                  label="Company"
-                  :rules="[(v) => !!v || 'Company is required']"
-                  required
-                />
-                <v-text-field
-                  v-model="editMember.name"
-                  label="Name"
-                  :rules="[(v) => !!v || 'Name is required']"
-                  required
-                />
-                <v-text-field
-                  v-model="editMember.email"
-                  label="Email"
-                  :rules="[rules.email]"
-                  readonly
-                  required
-                />
-                <v-select
-                  v-if="editMember.role != 'Owner'"
-                  v-model="editMember.role"
-                  :items="roles"
-                  label="Role"
-                  :rules="[(v) => !!v || 'Role is required']"
-                  required
-                />
-                <v-select
-                  v-if="editMember.role != 'Owner'"
-                  v-model="editMember.status"
-                  :items="statuses"
-                  label="Status"
-                  :rules="[(v) => !!v || 'Status is required']"
-                  required
-                />
-              </v-form>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-btn
-            v-if="editMember.role !== 'Owner'"
-            color="red"
-            @click="deleteMember(editMember)"
-          >
-            Delete
-            <v-icon right dark>mdi-delete-outline</v-icon>
-          </v-btn>
-          <v-spacer />
-          <v-btn
-            :disabled="!valid"
-            color="success"
-            @click="saveMember(editMember)"
-          >
-            Save
-            <v-icon right dark>mdi-check-outline</v-icon>
-          </v-btn>
-          <v-btn color="primary" @click="dialogEditMember = false">
-            Cancel
-            <v-icon right dark>mdi-close-circle-outline</v-icon>
-          </v-btn>
-        </v-card-actions>
-      </v-card>
+      <div class="border">
+        <v-card>
+          <v-card-title class="headline">Edit Member</v-card-title>
+          <v-card-text>
+            <v-row>
+              <v-col cols="12">
+                <v-form ref="form" v-model="valid">
+                  <v-text-field
+                    v-if="editMember.role === 'Owner'"
+                    v-model="editMember.accountName"
+                    label="Company"
+                    :rules="[(v) => !!v || 'Company is required']"
+                    required
+                  />
+                  <v-text-field
+                    v-model="editMember.name"
+                    label="Name"
+                    :rules="[(v) => !!v || 'Name is required']"
+                    required
+                  />
+                  <v-text-field
+                    v-model="editMember.email"
+                    label="Email"
+                    :rules="[rules.email]"
+                    readonly
+                    required
+                  />
+                  <v-select
+                    v-if="editMember.role != 'Owner'"
+                    v-model="editMember.role"
+                    :items="roles"
+                    label="Role"
+                    :rules="[(v) => !!v || 'Role is required']"
+                    required
+                  />
+                  <v-select
+                    v-if="editMember.role != 'Owner'"
+                    v-model="editMember.status"
+                    :items="statuses"
+                    label="Status"
+                    :rules="[(v) => !!v || 'Status is required']"
+                    required
+                  />
+                </v-form>
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-btn
+              v-if="editMember.role !== 'Owner'"
+              color="red"
+              @click="deleteMember(editMember)"
+            >
+              Delete
+              <v-icon right dark>mdi-delete-outline</v-icon>
+            </v-btn>
+            <v-spacer />
+            <v-btn
+              :disabled="!valid"
+              color="success"
+              @click="saveMember(editMember)"
+            >
+              Save
+              <v-icon right dark>mdi-check-outline</v-icon>
+            </v-btn>
+            <v-btn color="primary" @click="dialogEditMember = false">
+              Cancel
+              <v-icon right dark>mdi-close-circle-outline</v-icon>
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </div>
     </v-dialog>
     <v-dialog v-model="dialogInviteMember" max-width="550">
-      <v-card>
-        <v-card-title class="headline">Invite New Member</v-card-title>
-        <v-card-text>
-          <v-row>
-            <v-col cols="12">
-              <v-form ref="form" v-model="valid">
-                <v-text-field
-                  v-model="newMember.name"
-                  label="Name"
-                  :rules="[(v) => !!v || 'Name is required']"
-                  required
-                />
-                <v-text-field
-                  v-model="newMember.email"
-                  label="Email"
-                  :rules="[rules.email]"
-                  required
-                />
-                <v-select
-                  v-model="newMember.role"
-                  :items="roles"
-                  label="Role"
-                  :rules="[(v) => !!v || 'Role is required']"
-                  required
-                />
-                <v-switch
-                  v-model="newMember.sendEmail"
-                  label="Send Email Invite"
-                />
-              </v-form>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            :disabled="!valid"
-            color="success"
-            @click="addMember(newMember)"
-          >
-            Invite
-            <v-icon right dark>mdi-check-outline</v-icon>
-          </v-btn>
-          <v-btn color="primary" @click="dialogInviteMember = false">
-            Cancel
-            <v-icon right dark>mdi-close-circle-outline</v-icon>
-          </v-btn>
-        </v-card-actions>
-      </v-card>
+      <div class="border">
+        <v-card>
+          <v-card-title class="headline">Invite New Member</v-card-title>
+          <v-card-text>
+            <v-row>
+              <v-col cols="12">
+                <v-form ref="form" v-model="valid">
+                  <v-text-field
+                    v-model="newMember.name"
+                    label="Name"
+                    :rules="[(v) => !!v || 'Name is required']"
+                    required
+                  />
+                  <v-text-field
+                    v-model="newMember.email"
+                    label="Email"
+                    :rules="[rules.email]"
+                    required
+                  />
+                  <v-select
+                    v-model="newMember.role"
+                    :items="roles"
+                    label="Role"
+                    :rules="[(v) => !!v || 'Role is required']"
+                    required
+                  />
+                  <v-switch
+                    v-model="newMember.sendEmail"
+                    label="Send Email Invite"
+                  />
+                </v-form>
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn
+              :disabled="!valid"
+              color="success"
+              @click="addMember(newMember)"
+            >
+              Invite
+              <v-icon right dark>mdi-check-outline</v-icon>
+            </v-btn>
+            <v-btn color="primary" @click="dialogInviteMember = false">
+              Cancel
+              <v-icon right dark>mdi-close-circle-outline</v-icon>
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </div>
     </v-dialog>
     <v-dialog v-model="dialogServer" max-width="550">
-      <v-card>
-        <v-card-title class="headline">Add Server</v-card-title>
-        <v-card-text>
-          <v-row>
-            <v-col cols="12">
-              <v-form ref="form" v-model="valid">
-                <v-text-field
-                  v-model="server"
-                  label="Server"
-                  :rules="[(v) => !!v || 'Server is required']"
-                  single
-                  persistent-hint
-                  required
-                />
-              </v-form>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn :disabled="!valid" color="success" @click="createServer()">
-            Submit
-            <v-icon right dark>mdi-check-outline</v-icon>
-          </v-btn>
-          <v-btn color="primary" @click="dialogServer = false">
-            Cancel
-            <v-icon right dark>mdi-close-circle-outline</v-icon>
-          </v-btn>
-        </v-card-actions>
-      </v-card>
+      <div class="border">
+        <v-card>
+          <v-card-title class="headline">Add Server</v-card-title>
+          <v-card-text>
+            <v-row>
+              <v-col cols="12">
+                <v-form ref="form" v-model="valid">
+                  <v-text-field
+                    v-model="server"
+                    label="Server"
+                    :rules="[(v) => !!v || 'Server is required']"
+                    single
+                    persistent-hint
+                    required
+                  />
+                </v-form>
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn :disabled="!valid" color="success" @click="createServer()">
+              Submit
+              <v-icon right dark>mdi-check-outline</v-icon>
+            </v-btn>
+            <v-btn color="primary" @click="dialogServer = false">
+              Cancel
+              <v-icon right dark>mdi-close-circle-outline</v-icon>
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </div>
     </v-dialog>
     <v-dialog v-model="dialogMessage" max-width="550">
-      <v-card>
-        <v-card-title class="headline">Error</v-card-title>
-        <v-card-text>
-          <v-row>
-            <v-col cols="12">
-              <v-form ref="form">
-                <v-label class="pt-5 pb-0 pr-5 pl-5" style="font-size: 18px">{{
-                  message
-                }}</v-label>
-              </v-form>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn color="primary" @click="dialogMessage = false"> OK </v-btn>
-        </v-card-actions>
-      </v-card>
+      <div class="border">
+        <v-card>
+          <v-card-title class="headline">{{ messageTitle }}</v-card-title>
+          <v-card-text>
+            <v-row>
+              <v-col cols="12">
+                <v-form ref="form">
+                  <v-label
+                    class="pt-5 pb-0 pr-5 pl-5"
+                    style="font-size: 18px"
+                    >{{ message }}</v-label
+                  >
+                </v-form>
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn color="primary" @click="dialogMessage = false"> OK </v-btn>
+          </v-card-actions>
+        </v-card>
+      </div>
     </v-dialog>
     <v-dialog v-model="dialogLogout" max-width="550">
-      <v-card>
-        <v-card-title class="headline">Logout</v-card-title>
-        <v-card-text>
-          <v-row>
-            <v-col cols="12">
-              <v-form ref="form">
-                <v-label class="pt-5 pb-0 pr-5 pl-5" style="font-size: 18px"
-                  >You have been logged out.</v-label
-                >
-              </v-form>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn color="primary" @click="dialogLogout = false"> OK </v-btn>
-        </v-card-actions>
-      </v-card>
+      <div class="border">
+        <v-card>
+          <v-card-title class="headline">Logout</v-card-title>
+          <v-card-text>
+            <v-row>
+              <v-col cols="12">
+                <v-form ref="form">
+                  <v-label class="pt-5 pb-0 pr-5 pl-5" style="font-size: 18px"
+                    >You have been logged out.</v-label
+                  >
+                </v-form>
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn color="primary" @click="dialogLogout = false"> OK </v-btn>
+          </v-card-actions>
+        </v-card>
+      </div>
     </v-dialog>
 
     <v-dialog v-model="dialogSettings" max-width="550">
-      <v-card>
-        <v-card-title class="headline">Settings</v-card-title>
-        <v-card-text>
-          <v-row>
-            <v-col cols="12">
-              <v-form ref="form" v-model="valid">
-                <v-text-field
-                  v-model="device.name"
-                  label="Friendly name"
-                  :rules="[(v) => !!v || 'friendly name is required']"
-                  required
-                />
-                <v-text-field
-                  v-if="!device.registered"
-                  v-model="device.ezcode"
-                  label="EZ-Code"
-                />
-                <v-text-field
-                  v-model="device.server"
-                  readonly
-                  label="Server"
-                  required
-                />
-                <v-text-field v-model="device.id" label="Device ID" />
-                <v-text-field v-model="device.apiKey" label="Api Key" />
-                <v-text-field v-model="device.instanceid" label="Instance ID" />
-                <v-select
-                  v-model="device.logging"
-                  :items="loglevel.items"
-                  label="Logging"
-                />
-                <v-switch
-                  v-model="autoLaunch"
-                  label="Launch at start-up"
-                  @click="setAutoLaunch()"
-                />
-              </v-form>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            :disabled="!valid"
-            color="success"
-            @click="saveSettings(device)"
-          >
-            Submit
-            <v-icon right dark>mdi-check-outline</v-icon>
-          </v-btn>
-          <v-btn color="primary" @click="dialogSettings = false">
-            Cancel
-            <v-icon right dark>mdi-close-circle-outline</v-icon>
-          </v-btn>
-          <v-btn color="red" @click="deleteSettings()">
-            Delete
-            <v-icon right dark>mdi-delete-outline</v-icon>
-          </v-btn>
-        </v-card-actions>
-      </v-card>
+      <div class="border">
+        <v-card>
+          <v-card-title class="headline">Settings</v-card-title>
+          <v-card-text>
+            <v-row>
+              <v-col cols="12">
+                <v-form ref="form" v-model="valid">
+                  <v-text-field
+                    v-model="device.name"
+                    label="Friendly name"
+                    :rules="[(v) => !!v || 'friendly name is required']"
+                    required
+                  />
+                  <v-text-field
+                    v-if="!device.registered"
+                    v-model="device.ezcode"
+                    label="EZ-Code"
+                  />
+                  <v-text-field
+                    v-model="device.server"
+                    readonly
+                    label="Server"
+                    required
+                  />
+                  <v-text-field v-model="device.id" label="Device ID" />
+                  <v-text-field v-model="device.apiKey" label="Api Key" />
+                  <v-text-field
+                    v-model="device.instanceid"
+                    label="Instance ID"
+                  />
+                  <v-select
+                    v-model="device.logging"
+                    :items="loglevel.items"
+                    label="Logging"
+                  />
+                  <v-switch
+                    v-model="autoLaunch"
+                    label="Launch at start-up"
+                    @click="setAutoLaunch()"
+                  />
+                </v-form>
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn
+              :disabled="!valid"
+              color="success"
+              @click="saveSettings(device)"
+            >
+              Submit
+              <v-icon right dark>mdi-check-outline</v-icon>
+            </v-btn>
+            <v-btn color="primary" @click="dialogSettings = false">
+              Cancel
+              <v-icon right dark>mdi-close-circle-outline</v-icon>
+            </v-btn>
+            <v-btn color="red" @click="deleteSettings()">
+              Delete
+              <v-icon right dark>mdi-delete-outline</v-icon>
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </div>
     </v-dialog>
     <v-dialog v-model="dialogAbout" width="400">
-      <v-card>
-        <v-card-text>
-          <v-row>
-            <v-col cols="12">
-              <v-form ref="form" v-model="valid">
-                <div class="text-center">
-                  <h4>Nettica Agent {{ version }}</h4>
-                  <img
-                    class="mr-3"
-                    :src="require('../assets/nettica.png')"
-                    height="100"
-                    alt="nettica"
-                  />
-                  <p>
-                    <v-label @click="launchNettica()"
-                      >https://nettica.com</v-label
-                    >
-                  </p>
-                  <v-btn color="primary" @click="dialogAbout = false">
-                    OK
-                  </v-btn>
-                </div>
-              </v-form>
-            </v-col>
-          </v-row>
-        </v-card-text>
-      </v-card>
+      <div class="border">
+        <v-card>
+          <v-card-text>
+            <v-row>
+              <v-col cols="12">
+                <v-form ref="form" v-model="valid">
+                  <div class="text-center">
+                    <h4>Nettica Agent {{ version }}</h4>
+                    <img
+                      class="mr-3"
+                      :src="require('../assets/nettica.png')"
+                      height="100"
+                      alt="nettica"
+                    />
+                    <p>
+                      <v-label @click="launchNettica()"
+                        >https://nettica.com</v-label
+                      >
+                    </p>
+                    <v-btn color="primary" @click="dialogAbout = false">
+                      OK
+                    </v-btn>
+                  </div>
+                </v-form>
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
+      </div>
     </v-dialog>
     <v-dialog v-model="dialogConfirmDelete" max-width="550">
-      <v-card>
-        <v-card-title class="headline">Confirm Delete</v-card-title>
-        <v-card-text>
-          <v-row>
-            <v-col cols="12">
-              <v-checkbox
-                v-model="hardDelete"
-                label="Delete from server"
-              ></v-checkbox>
-              <p>
-                Are you sure you want to delete this device? Deleting the device
-                will also disconnect any running VPNs, log you out and exit the
-                application.
-              </p>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn color="red" @click="confirmDelete">
-            Delete
-            <v-icon right dark>mdi-delete-outline</v-icon>
-          </v-btn>
-          <v-btn color="primary" @click="dialogConfirmDelete = false">
-            Cancel
-            <v-icon right dark>mdi-close-circle-outline</v-icon>
-          </v-btn>
-        </v-card-actions>
-      </v-card>
+      <div class="border">
+        <v-card>
+          <v-card-title class="headline">Confirm Delete</v-card-title>
+          <v-card-text>
+            <v-row>
+              <v-col cols="12">
+                <v-checkbox
+                  v-model="hardDelete"
+                  label="Delete from server"
+                ></v-checkbox>
+                <p>
+                  Are you sure you want to delete this device? Deleting the
+                  device will also disconnect any running VPNs, log you out and
+                  exit the application.
+                </p>
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn color="red" @click="confirmDelete">
+              Delete
+              <v-icon right dark>mdi-delete-outline</v-icon>
+            </v-btn>
+            <v-btn color="primary" @click="dialogConfirmDelete = false">
+              Cancel
+              <v-icon right dark>mdi-close-circle-outline</v-icon>
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </div>
     </v-dialog>
   </div>
 </template>
@@ -861,7 +892,9 @@ export default {
     dialogServer: false,
     dialogMessage: false,
     dialogLogout: false,
+    minimized: false,
     message: "",
+    messageTitle: "Error",
     version: version,
     autoLaunch: false,
     server: "",
@@ -1004,7 +1037,7 @@ export default {
               args[j].logged_in = this.servers[i].logged_in;
 
               if (args[j].class == null || args[j].class == "") {
-                args[j].class = "btn btn-danger";
+                args[j].class = "btn btn-primary";
                 args[j].logged_in = false;
               }
             }
@@ -1022,7 +1055,7 @@ export default {
           ""
         );
         if (this.servers[x].class == null) {
-          this.servers[x].class = "btn btn-danger";
+          this.servers[x].class = "btn btn-primary";
         }
         if (this.servers[x].logged_in == null) {
           this.servers[x].logged_in = false;
@@ -1065,6 +1098,18 @@ export default {
       }
 
       this.$forceUpdate();
+    });
+    ipcRenderer.on("minimized", (event, args) => {
+      console.log("minimized", args);
+      this.minimized = args;
+      if (!this.minimized) {
+        // reset the graph to not set
+        this.nodes = [];
+        this.links = [];
+        this.net = null;
+        this.netName = "";
+        this.showChart = false;
+      }
     });
     ipcRenderer.on("update-available", (event, args) => {
       console.log("update-available", args);
@@ -1124,7 +1169,7 @@ export default {
         console.log("No longer authenticated");
         for (let i = 0; i < this.servers.length; i++) {
           if (this.servers[i].logged_in) {
-            this.servers[i].class = "btn btn-danger";
+            this.servers[i].class = "btn btn-primary";
             this.servers[i].logged_in = false;
             this.servers[i].accessToken = null;
           }
@@ -1133,7 +1178,7 @@ export default {
         this.oneHour = 0;
       }
       this.loadQueries();
-      if (this.net != null) {
+      if (this.net != null && !this.minimized) {
         console.log("getMetrics", this.net.netName);
         this.getMetrics(this, this.net.netName);
       }
@@ -1145,12 +1190,21 @@ export default {
   methods: {
     async logout(item) {
       item.logged_in = false;
-      item.class = "btn btn-danger";
+      item.class = "btn btn-primary";
       item.accessToken = null;
 
       this.callLogout(item.device.server);
       console.log("logout - after callLogout");
       this.dialogLogout = true;
+    },
+    async loginWrapper(item) {
+      this.login(item)
+        .then(() => {
+          console.log("loginWrapper - login successful");
+        })
+        .catch(() => {
+          console.log("loginWrapper - login failed");
+        });
     },
     async login(item) {
       return new Promise((resolve, reject) => {
@@ -1172,6 +1226,7 @@ export default {
                 this.$forceUpdate();
                 resolve(); // Resolve the promise on successful login
               } else {
+                // this is causing an uncaught exception error that's not real, ignore
                 reject(new Error("Failed to retrieve access token")); // Reject if no access token
               }
             } catch (e) {
@@ -1179,7 +1234,7 @@ export default {
               reject(e); // Reject the promise on error
             }
           } else {
-            item.class = "btn btn-danger";
+            item.class = "btn btn-primary";
             item.logged_in = false;
             console.log("logout - accessToken = ", item.accessToken);
             this.logout(item);
@@ -1301,9 +1356,13 @@ export default {
         item.logged_in = false;
       }
 
-      if (!item.logged_in) {
-        await this.login(item);
-        item = this.savedItem;
+      try {
+        if (!item.logged_in) {
+          await this.loginWrapper(item);
+          item = this.savedItem;
+        }
+      } catch (e) {
+        console.log("startCreate - login failed: ", e);
       }
 
       if (!item.logged_in) {
@@ -1342,6 +1401,22 @@ export default {
         }
         k++;
       }
+
+      if (this.myNets.length == 0) {
+        this.message =
+          "No networks available. Use the Admin to create a network.";
+        this.messageTitle = "Error";
+        this.dialogMessage = true;
+        return;
+      }
+
+      if (this.netList.items.length == 0) {
+        this.message = "You are connected to all networks available!";
+        this.messageTitle = "Info";
+        this.dialogMessage = true;
+        return;
+      }
+
       this.netList.selected = this.netList.items[selected];
       this.updateDefaults(this.netList.selected);
 
@@ -1491,6 +1566,7 @@ export default {
       var publicKey = "";
 
       if (this.vpn.current.syncEndpoint && this.endpoint == "") {
+        this.messageTitle = "Info";
         this.message = "Endpoint is required if sync is selected";
         this.dialogMessage = true;
         return;
@@ -1584,6 +1660,7 @@ export default {
         success = true;
       } catch (error) {
         console.log("Error = ", error);
+        this.messageTitle = "Error";
         this.message =
           "Invalid server. This version of Nettica Agent supports multiple servers (eg, Enterprise customers).  Click the login button, and then click Join Network to add this device to your service.";
         this.dialogServer = false;
@@ -1610,7 +1687,7 @@ export default {
       name = name.trimStart("http://");
 
       s.name = name;
-      s.class = "btn btn-danger";
+      s.class = "btn btn-primary";
       s.device.name = os.hostname().toLowerCase();
       s.device.server = this.server;
       s.device.ezcode = "";
@@ -1663,6 +1740,7 @@ export default {
                 if (error) {
                   console.log("Error = ", error);
                   this.message = error.response.data.error;
+                  this.messageTitle = "Error";
                   this.dialogMessage = true;
                 }
               });
@@ -1684,6 +1762,7 @@ export default {
           .catch((error) => {
             if (error) {
               console.log("Error = ", error);
+              this.messageTitle = "Error";
               this.message = error.response.data.error;
               this.dialogMessage = true;
             }
@@ -2208,6 +2287,11 @@ export default {
 </script>
 <style>
 @import "~bootstrap/dist/css/bootstrap.min.css";
+
+.border {
+  border: 1px solid #444 !important;
+  border-radius: 5px;
+}
 
 .btn-primary {
   background-color: #336699;

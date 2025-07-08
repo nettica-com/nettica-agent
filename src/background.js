@@ -302,7 +302,7 @@ async function createAuthWindow(login) {
 
       authWindow.on("closed", () => {
         authWindow = null;
-        reject(new Error("Authentication window closed"));
+        resolve(null);
       });
     } catch (error) {
       console.error("Error creating Auth Window: ", error);
@@ -378,7 +378,12 @@ function createAppWindow() {
   });
 
   if (os.platform == "win32") {
-    autoUpdater.checkForUpdatesAndNotify();
+    autoUpdater
+      .checkForUpdatesAndNotify()
+      .then({})
+      .catch((e) => {
+        console.log(e);
+      });
   }
 
   mainWindow.on("minimize", function (event) {
@@ -390,11 +395,21 @@ function createAppWindow() {
         console.log("couldn't hide window ", e);
       }
     }
+    mainWindow.webContents.send("minimized", true);
+  });
+
+  mainWindow.on("restore", function () {
+    mainWindow.webContents.send("minimized", false);
+  });
+
+  mainWindow.on("maximize", function () {
+    mainWindow.webContents.send("minimized", false);
   });
 
   mainWindow.on("close", function (event) {
     if (process.platform != "linux") {
       event.preventDefault();
+      mainWindow.webContents.send("minimized", true);
       try {
         mainWindow.hide();
       } catch (e) {
