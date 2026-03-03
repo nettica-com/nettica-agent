@@ -13,7 +13,7 @@ module.exports = function signExecutable(executablePath) {
     const signtoolPath = `"C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.22621.0\\x64\\signtool.exe"`;
     const timestampServer = "http://ts.ssl.com";
     const certThumbprint = "CBB53B9D617593941E91E50AD9E51A9FD3700838";
-    const command = `${signtoolPath} sign /tr ${timestampServer} /td sha256 /fd sha256 /sha1 ${certThumbprint} "${filePath}"`;
+    const command = `${signtoolPath} sign /fd sha256 /tr ${timestampServer} /td sha256 /n "Nettica Corporation" "${filePath}"`;
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
