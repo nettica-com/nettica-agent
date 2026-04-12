@@ -25,4 +25,5 @@ pnpm-debug.log*
 #Electron-builder output
 /dist_electron
 nettica-client.exe
-extra/wireguard-amd64-0.5.3.msi
+# extra/wireguard-amd64-0.5.3.msi
+# extra/wireguard-amd64-0.6.1.msi
